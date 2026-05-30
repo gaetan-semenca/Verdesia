@@ -142,7 +142,19 @@ Reglas garden_map_suggestions — RECONSTRUCCIÓN APROXIMADA DEL HUERTO:
   "isolated" si separée — ne pas inventer, omettre si pas clair.
 - Si scene_type="unclear" o detected_plants está vacío,
   garden_map_suggestions también debe quedar vacío.
-- Prudencia siempre. Mejor pocas sugerencias seguras que muchas inciertas.`;
+- Prudencia siempre. Mejor pocas sugerencias seguras que muchas inciertas.
+
+FAST MODE (when the user message mentions MODO RÁPIDO):
+- Return compact but complete JSON.
+- Never write long prose. Short sentences only.
+- Every array must contain at most 2 items.
+- detected_plants: max 2.
+- garden_map_suggestions: max 2.
+- Each text field max 120 characters.
+- Do not include extra commentary outside the JSON.
+- ALWAYS finish the JSON completely — close every brace and bracket.
+- If you must shorten content, drop optional fields (set to "" or [])
+  rather than leaving the JSON unclosed.`;
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
@@ -186,18 +198,26 @@ module.exports = async (req, res) => {
     const fastMode = body && body.fast !== false; // default true
     const userText = fastMode
       ? 'Observa este huerto con calma y entrega la lectura en el JSON pedido. '
-        + 'MODO RÁPIDO: máximo 2 plantas en detected_plants, máximo 2 elementos por lista (main_strengths, main_concerns, priority_actions, garden_improvements, next_week_focus, recommended_actions). '
-        + 'Frases cortas. No identifiques sin necesidad — describe lo que ves.'
+        + 'MODO RÁPIDO: máximo 2 plantas en detected_plants, máximo 2 garden_map_suggestions, '
+        + 'máximo 2 elementos por lista (main_strengths, main_concerns, priority_actions, '
+        + 'garden_improvements, next_week_focus, recommended_actions). '
+        + 'Cada campo de texto máximo 120 caracteres. Frases cortas. '
+        + 'Cierra siempre el JSON completamente — termina todas las llaves y corchetes. '
+        + 'No identifiques sin necesidad — describe lo que ves.'
       : 'Observa este huerto con calma y entrega la lectura en el JSON pedido. No identifiques sin necesidad — describe lo que ves.';
 
     const payload = {
       model: MODEL,
       response_format: { type: 'json_object' },
       temperature: 0.2,
-      // Borne la latence : gpt-4o-mini répond plus vite quand on cape.
-      // 700 tokens couvrent largement le JSON fast mode (≈400-500 réels).
-      // En mode lecture longue, on relâche à 1400.
-      max_tokens: fastMode ? 700 : 1400,
+      // max_tokens : compromis entre latence et complétude du JSON.
+      // 700 s'est avéré trop bas en fast mode (JSON tronqué dans
+      // garden_map_suggestions). On remonte avec marge confortable :
+      //   - fast : 1100 (≈ 50% au-dessus du payload réel observé)
+      //   - full : 1600 (lectures longues, 5 plantes max possible)
+      // Le client trim/sanitize en aval, donc on garantit toujours
+      // que le JSON arrive entier — quitte à payer ~0.0002$ de plus.
+      max_tokens: fastMode ? 1100 : 1600,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         {
@@ -231,14 +251,26 @@ module.exports = async (req, res) => {
       return res.status(502).json({ error: 'Respuesta vacía del modelo.' });
     }
 
+    // safeJsonParse :
+    // - tente JSON.parse standard
+    // - logue les 1200 premiers chars de la string brute en cas d'échec
+    //   (assez pour diagnostiquer la troncature sans exploser les logs)
+    // - jamais log : clé API, headers, image base64, body utilisateur
+    // - jamais réparation auto (risque de masquer un vrai bug serveur)
     let parsed;
     try {
-      parsed = JSON.parse(content);
-    } catch {
-      console.error('Failed to parse model JSON:', content);
-      return res.status(502).json({ error: 'El modelo no devolvió JSON válido.' });
+      parsed = safeJsonParse(content);
+    } catch (parseErr) {
+      // finish_reason peut aider à diagnostiquer (length = troncature)
+      const finishReason = completion?.choices?.[0]?.finish_reason || 'unknown';
+      console.error('[diagnose] JSON parse failed · finish_reason=' + finishReason);
+      return res.status(502).json({
+        error: 'INVALID_MODEL_JSON',
+        message: 'La lectura llegó incompleta. Intenta nuevamente con una foto más simple.',
+      });
     }
 
+    // Trim APRÈS parse (l'objet, jamais la string brute).
     const sanitized = sanitize(parsed);
     return res.status(200).json(fastMode ? trimFastMode(sanitized) : sanitized);
   } catch (err) {
@@ -246,6 +278,17 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Error inesperado en el servidor.' });
   }
 };
+
+/* safeJsonParse — wrapper avec log borné. Jamais de réparation. */
+function safeJsonParse(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    const preview = typeof raw === 'string' ? raw.slice(0, 1200) : String(raw).slice(0, 1200);
+    console.error('Failed to parse model JSON · first 1200 chars:\n' + preview);
+    throw err;
+  }
+}
 
 /* ───── helpers ───── */
 
