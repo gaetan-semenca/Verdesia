@@ -372,10 +372,12 @@
     console.time('verdesia:diagnose-total');
     const _t0 = performance.now();
 
-    // Timeout sécurité : 20s côté frontend. AbortController coupe le fetch
+    // Timeout sécurité : 30s côté frontend. AbortController coupe le fetch
     // proprement (pas de freeze infini si Vercel ou OpenAI traîne).
+    // Aligné sur maxDuration: 30 du vercel.json — donne 12s de marge
+    // au-dessus du pire cas observé en production (image complexe ~18s).
     const controller = new AbortController();
-    const TIMEOUT_MS = 20000;
+    const TIMEOUT_MS = 30000;
     let _timedOut = false;
     const timeoutId = setTimeout(() => {
       _timedOut = true;
