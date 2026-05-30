@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#3B5838">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Verdésia">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180-apple.png">
+<title>Verdésia — Memoria del huerto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════ TOKENS ═══════════════════════════════════════ */
+:root {
+  --soil:   #2A1E12;
+  --bark:   #4A3626;
+  --bark-lt:#7A6248;
+  --moss:   #3B5838;
+  --moss-lt:#4D7050;
+  --sage:   #78A07C;
+  --sage-lt:#A9C8AD;
+  --straw:  #E6D7B0;
+  --cream:  #F4EFE5;
+  --parch:  #EDE6D8;
+  --rust:   #B55A28;
+  --sun:    #C8A03A;
+  --white:  #FDFAF2;
+  --font-d: 'Playfair Display', Georgia, serif;
+  --font-b: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-m: 'DM Mono', monospace;
+  --ease:   cubic-bezier(.16,1,.3,1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--cream);
+  color: var(--soil);
+  font-family: var(--font-b);
+  font-size: 15.5px;
+  line-height: 1.7;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+  opacity: .55;
+}
+
+/* ═══════════════════════════════════════ NAV ═══════════════════════════════════════ */
+.nav {
+  position: sticky; top: 0; z-index: 400;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px; height: 72px;
+  background: rgba(253,250,242,.93);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(42,30,18,.06);
+}
+.nav-logo {
+  font-family: var(--font-d); font-size: 22px;
+  color: var(--soil); text-decoration: none;
+  position: relative; line-height: 1.1;
+}
+.nav-logo em { color: var(--moss); font-style: italic; }
+.nav-logo::after {
+  content: 'Cultiva tu autonomía';
+  position: absolute; top: 100%; left: 0;
+  margin-top: 6px;
+  font-family: var(--font-d); font-size: 12.5px;
+  color: var(--moss-lt); font-style: italic;
+  font-weight: 400; letter-spacing: .15px;
+  white-space: nowrap; pointer-events: none;
+}
+@media (max-width: 380px) { .nav-logo::after { display: none; } }
+.nav-links {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 24px; align-items: center;
+}
+.nav-link {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  text-decoration: none; transition: color .18s;
+  padding-bottom: 2px; border-bottom: 1px solid transparent;
+}
+.nav-link.active { color: var(--soil); border-bottom-color: var(--moss); }
+.nav-link:hover  { color: var(--bark); }
+.nav-r { display: flex; align-items: center; gap: 14px; }
+
+/* ═══════════════════════════════════════ PAGE HEAD ═══════════════════════════════════════ */
+.page-head {
+  padding: 36px 40px 24px;
+  border-bottom: 1px solid rgba(42,30,18,.06);
+  max-width: 920px; margin: 0 auto;
+}
+.page-eyebrow {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.page-title {
+  font-family: var(--font-d);
+  font-size: clamp(28px, 4vw, 42px);
+  color: var(--soil); line-height: 1.05; letter-spacing: -.6px;
+}
+.page-title em { color: var(--moss); font-style: italic; }
+.page-sub {
+  font-size: 14px; color: var(--bark-lt); font-weight: 300;
+  margin-top: 10px; max-width: 540px;
+}
+
+/* ═══════════════════════════════════════ TIMELINE ═══════════════════════════════════════ */
+.timeline {
+  max-width: 720px; margin: 0 auto;
+  padding: 32px 40px 56px;
+  display: flex; flex-direction: column;
+  gap: 28px;
+}
+
+/* ─── Card de observación ─────────────────────────────────────
+   Una entrada de memoria. Inmutable salvo la supresión, que vive
+   en una esquina discreta y pide confirmación en línea (sin modal). */
+.obs-card {
+  position: relative;
+  background: var(--white);
+  border: 1px solid rgba(42,30,18,.07);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color .18s, box-shadow .18s;
+}
+.obs-card:hover { border-color: rgba(59,88,56,.18); box-shadow: 0 6px 22px rgba(42,30,18,.05); }
+.obs-photo {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: var(--parch);
+  display: block;
+  object-fit: cover;
+}
+.obs-photo--missing {
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-style: italic;
+  color: var(--sage-lt); font-size: 13px;
+  background: var(--parch);
+}
+.obs-body {
+  padding: 20px 22px 22px;
+}
+
+/* Metadatos editoriales: fecha · estación · región */
+.obs-meta {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 1.5px; text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex; flex-wrap: wrap; gap: 6px 12px;
+}
+.obs-meta span + span::before {
+  content: '·';
+  color: var(--sage-lt);
+  margin-right: 12px;
+}
+
+.obs-summary {
+  font-family: var(--font-d);
+  font-size: 16.5px;
+  color: var(--soil);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+/* Health badge — reuso del lenguaje cromático de la Lectura */
+.health-badge {
+  display: inline-block;
+  font-family: var(--font-m); font-size: 9.5px;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 5px 11px; border-radius: 100px;
+  background: var(--parch); color: var(--bark);
+  border: 1px solid rgba(42,30,18,.08);
+  margin-bottom: 14px;
+}
+.health-badge--good      { background: #e3eddc; color: var(--moss); }
+.health-badge--excellent { background: #e3eddc; color: var(--moss); }
+.health-badge--mixed     { background: #efe7d4; color: var(--bark); }
+.health-badge--stressed  { background: #f6e9da; color: var(--rust); }
+.health-badge--poor      { background: #f6e9da; color: var(--rust); }
+.health-badge--unclear   { background: var(--parch); color: var(--bark-lt); }
+
+.obs-section {
+  margin-top: 12px;
+}
+.obs-section h3 {
+  font-family: var(--font-m); font-size: 8.5px;
+  color: var(--sage); letter-spacing: 1.3px; text-transform: uppercase;
+  margin-bottom: 6px; font-weight: 500;
+}
+.obs-section--concern h3 { color: var(--rust); }
+.obs-section ul {
+  list-style: none;
+  padding: 0; margin: 0;
+}
+.obs-section li {
+  font-size: 14px; color: var(--bark); font-weight: 300;
+  line-height: 1.6;
+  padding-left: 14px;
+  position: relative;
+  margin-bottom: 4px;
+}
+.obs-section li::before {
+  content: '—';
+  position: absolute; left: 0;
+  color: var(--sage-lt);
+}
+.obs-section--concern li::before { color: var(--rust); }
+
+/* Botón eliminar — esquina superior derecha, casi invisible salvo hover */
+.obs-delete {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(42,30,18,.10);
+  background: rgba(253,250,242,.85);
+  color: var(--bark-lt);
+  font-size: 13px; line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .18s, color .18s, border-color .18s, background .18s;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2;
+}
+.obs-card:hover .obs-delete,
+.obs-card:focus-within .obs-delete { opacity: 1; }
+@media (hover: none) { .obs-delete { opacity: 1; } }
+.obs-delete:hover { color: var(--rust); border-color: rgba(181,90,40,.3); }
+
+.obs-confirm {
+  position: absolute;
+  top: 12px; right: 12px;
+  padding: 6px 12px 6px 14px;
+  background: var(--white);
+  border: 1px solid rgba(181,90,40,.35);
+  border-radius: 100px;
+  display: flex; align-items: center; gap: 10px;
+  z-index: 3;
+  font-family: var(--font-m); font-size: 9.5px;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--rust);
+}
+.obs-confirm-btn {
+  border: none; background: none; cursor: pointer;
+  font-family: inherit; font-size: inherit;
+  letter-spacing: inherit; text-transform: inherit;
+  padding: 2px 4px;
+  transition: color .15s;
+}
+.obs-confirm-yes { color: var(--rust); font-weight: 500; }
+.obs-confirm-no  { color: var(--bark-lt); }
+.obs-confirm-yes:hover { color: var(--soil); }
+.obs-confirm-no:hover  { color: var(--soil); }
+
+/* ═══════════════════════════════════════ EMPTY STATE ═══════════════════════════════════════ */
+.empty {
+  text-align: center;
+  padding: 64px 24px;
+  background: var(--white);
+  border: 1px dashed rgba(42,30,18,.12);
+  border-radius: 14px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.empty-em {
+  font-size: 36px;
+  opacity: .35;
+  margin-bottom: 14px;
+}
+.empty-title {
+  font-family: var(--font-d);
+  font-size: 22px;
+  color: var(--bark-lt);
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+.empty-sub {
+  font-size: 14px;
+  color: var(--sage); font-weight: 300;
+  line-height: 1.7;
+  max-width: 380px;
+  margin: 0 auto 22px;
+}
+.empty-cta {
+  display: inline-block;
+  padding: 11px 22px; border-radius: 100px;
+  background: var(--moss); color: var(--white);
+  text-decoration: none;
+  font-family: var(--font-b); font-size: 13.5px; font-weight: 500;
+  transition: background .18s;
+}
+.empty-cta:hover { background: var(--soil); }
+
+/* ═══════════════════════════════════════ FREE FOOTER ═══════════════════════════════════════ */
+.free-note {
+  max-width: 540px; margin: 16px auto 0;
+  padding: 22px 24px 24px;
+  text-align: center;
+  border-top: 1px solid rgba(42,30,18,.06);
+}
+.free-note-line {
+  font-family: var(--font-d); font-style: italic;
+  color: var(--bark-lt); font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.free-note-link {
+  display: inline-block;
+  font-family: var(--font-m); font-size: 10px;
+  letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--moss); text-decoration: none;
+  padding: 4px 0; border-bottom: 1px solid rgba(59,88,56,.28);
+  transition: color .18s, border-color .18s;
+}
+.free-note-link:hover { color: var(--soil); border-bottom-color: var(--soil); }
+
+/* ═══════════════════════════════════════ FOOTER ═══════════════════════════════════════ */
+.footer {
+  margin-top: 24px;
+  padding: 32px 40px;
+  border-top: 1px solid rgba(42,30,18,.06);
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  flex-wrap: wrap;
+}
+.footer-logo { font-family: var(--font-d); font-size: 16px; color: var(--soil); }
+.footer-links { display: flex; gap: 18px; flex-wrap: wrap; }
+.footer-links a {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 1.5px; text-transform: uppercase;
+  text-decoration: none; transition: color .15s;
+}
+.footer-links a:hover { color: var(--soil); }
+.footer-cite {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--sage-lt); letter-spacing: 1px;
+}
+
+/* ═══════════════════════════════════════ MOBILE ═══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .nav { padding: 0 18px; }
+  .nav-links { display: none; }
+  .page-head { padding: 28px 20px 20px; }
+  .timeline { padding: 24px 18px 48px; gap: 22px; }
+  .obs-body { padding: 18px 18px 20px; }
+  .footer { padding: 24px 20px; }
+}
+@media (max-width: 480px) {
+  .obs-summary { font-size: 15.5px; }
+  .obs-meta { font-size: 9px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ NAV -->
+<nav class="nav">
+  <a href="verdesia_landing.html" class="nav-logo">Verd<em>ésia</em></a>
+  <div class="nav-links">
+    <a class="nav-link" href="verdesia_today.html"        id="nlHoy">Hoy</a>
+    <a class="nav-link" href="verdesia_jardin.html"       id="nlJardin">Mi jardín</a>
+    <a class="nav-link" href="verdesia_explorer.html"     id="nlPlantas">Plantas</a>
+    <a class="nav-link" href="verdesia_brote.html"        id="nlDiag">Lectura del huerto</a>
+    <a class="nav-link active" href="verdesia_observaciones.html" id="nlMemoria">Memoria</a>
+  </div>
+  <div class="nav-r"></div>
+</nav>
+
+<!-- ═══════════════════ PAGE HEAD -->
+<header class="page-head">
+  <div class="page-eyebrow">Memoria del huerto</div>
+  <h1 class="page-title">Tu jardín a <em>través del tiempo</em></h1>
+  <p class="page-sub">Verdésia recuerda el jardín contigo. Cada observación que guardas queda aquí — para volver a verla, comparar las estaciones, y entender la evolución lenta del huerto.</p>
+</header>
+
+<!-- ═══════════════════ TIMELINE -->
+<main class="timeline" id="timeline" aria-label="Timeline de observaciones"></main>
+
+<!-- Footer libre (sólo tier free) -->
+<section class="free-note" id="freeNote" hidden>
+  <p class="free-note-line" id="freeNoteLine"></p>
+  <a class="free-note-link" href="verdesia_plus.html">Descubrir Verdésia Plus →</a>
+</section>
+
+<!-- ═══════════════════ FOOTER -->
+<footer class="footer">
+  <div class="footer-logo">Verdésia</div>
+  <div class="footer-links">
+    <a href="verdesia_today.html">Hoy</a>
+    <a href="verdesia_jardin.html">Mi jardín</a>
+    <a href="verdesia_explorer.html">Plantas</a>
+    <a href="verdesia_brote.html">Lectura del huerto</a>
+    <a href="verdesia_observaciones.html">Memoria</a>
+  </div>
+  <div class="footer-cite">CHILE · MVP 2025</div>
+</footer>
+
+<!-- ═══════════════════ SCRIPTS -->
+<script src="plants.js"></script>
+<script src="storage.js"></script>
+<script src="verdesia_region_config.js"></script>
+<script src="verdesia_plan.js"></script>
+<script src="garden.js"></script>
+<script src="observations.js"></script>
+<script src="onboarding.js"></script>
+<script src="verdesia_profile.js" defer></script>
+
+<script>
+(function () {
+  /* ─── Etiquetas de visualización ────────────────────────────
+     Las claves canónicas son inglesas (compatibilidad con el resto del
+     dominio: SemencaGarden.getSeason, schemas IA). La UI las traduce
+     al español de forma local — sin acoplar el módulo de persistencia
+     a la presentación. */
+
+  const SEASON_LABEL = {
+    summer: 'Verano',
+    autumn: 'Otoño',
+    winter: 'Invierno',
+    spring: 'Primavera',
+  };
+
+  const HEALTH_LABEL = {
+    excellent: 'Conjunto excelente',
+    good:      'Conjunto sano',
+    mixed:     'Conjunto desigual',
+    stressed:  'Señales de estrés',
+    poor:      'Lectura preocupante',
+    unclear:   'Lectura difícil',
+  };
+
+  /* Fecha en formato editorial castellano: "15 de mayo de 2026".
+     Intl si está disponible; fallback minimalista en caso contrario. */
+  function formatDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    try {
+      return new Intl.DateTimeFormat('es-CL', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      }).format(d);
+    } catch {
+      return d.toLocaleDateString();
+    }
+  }
+
+  function regionLabel(id) {
+    if (!id) return '';
+    if (window.VERDESIA_REGION_CONFIG && typeof window.VERDESIA_REGION_CONFIG.getRegionById === 'function') {
+      const r = window.VERDESIA_REGION_CONFIG.getRegionById(id);
+      // La façade expose `label` ('Santiago (RM)') et `displayLabel` ('Santiago').
+      // Preferimos el displayLabel — más corto y mejor para una meta inline.
+      if (r) return r.displayLabel || r.label || id;
+    }
+    return id;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+    }[c]));
+  }
+
+  /* ─── Render de la timeline ─────────────────────────────────
+     Re-render completo en cada cambio (nada de DOM diffing — la lista
+     de observaciones queda pequeña por diseño, máx ~50 en premium). */
+
+  const root = document.getElementById('timeline');
+  const freeNote = document.getElementById('freeNote');
+  const freeNoteLine = document.getElementById('freeNoteLine');
+
+  function render() {
+    const obs = (window.VerdesiaObservations && window.VerdesiaObservations.list()) || [];
+    root.innerHTML = '';
+
+    if (obs.length === 0) {
+      root.appendChild(buildEmpty());
+      freeNote.hidden = true;
+      return;
+    }
+
+    obs.forEach(o => root.appendChild(buildCard(o)));
+
+    // Pie de tier free — sólo si el usuario es free.
+    const tier = (window.VerdesiaPlan && window.VerdesiaPlan.getTier && window.VerdesiaPlan.getTier()) || 'free';
+    if (tier !== 'premium') {
+      const max = (window.VerdesiaObservations && window.VerdesiaObservations.MAX_FREE) || 3;
+      freeNoteLine.textContent = obs.length >= max
+        ? `Conservas tus ${max} últimas observaciones. Verdésia Plus guarda todas — sin perder ningún paso del jardín.`
+        : `Tu memoria conserva las ${max} últimas observaciones. Verdésia Plus las guarda todas.`;
+      freeNote.hidden = false;
+    } else {
+      freeNote.hidden = true;
+    }
+  }
+
+  function buildEmpty() {
+    const wrap = document.createElement('div');
+    wrap.className = 'empty';
+    wrap.innerHTML = `
+      <div class="empty-em">🌿</div>
+      <div class="empty-title">Tu memoria del huerto está esperando su primera observación.</div>
+      <p class="empty-sub">Verdésia recuerda contigo. Cuando hagas una Lectura del huerto, podrás guardarla aquí — para volver a verla más adelante, estación tras estación.</p>
+      <a class="empty-cta" href="verdesia_brote.html">Hacer una Lectura →</a>
+    `;
+    return wrap;
+  }
+
+  function buildCard(o) {
+    const card = document.createElement('article');
+    card.className = 'obs-card';
+    card.dataset.id = o.id;
+
+    // Photo
+    if (o.image) {
+      const img = document.createElement('img');
+      img.className = 'obs-photo';
+      img.src = o.image;
+      img.alt = '';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      card.appendChild(img);
+    } else {
+      // Si la imagen no se conservó (quota), placeholder editorial.
+      const placeholder = document.createElement('div');
+      placeholder.className = 'obs-photo obs-photo--missing';
+      placeholder.textContent = 'Sin imagen';
+      card.appendChild(placeholder);
+    }
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'obs-body';
+
+    // Meta : fecha · estación · región
+    const meta = document.createElement('div');
+    meta.className = 'obs-meta';
+    const metaParts = [];
+    const dateStr = formatDate(o.createdAt);
+    if (dateStr) metaParts.push(`<span>${esc(dateStr)}</span>`);
+    if (o.season && SEASON_LABEL[o.season]) metaParts.push(`<span>${SEASON_LABEL[o.season]}</span>`);
+    const regLabel = regionLabel(o.region);
+    if (regLabel) metaParts.push(`<span>${esc(regLabel)}</span>`);
+    meta.innerHTML = metaParts.join('');
+    body.appendChild(meta);
+
+    // Summary
+    if (o.summary) {
+      const sum = document.createElement('p');
+      sum.className = 'obs-summary';
+      sum.textContent = o.summary;
+      body.appendChild(sum);
+    }
+
+    // Health badge
+    if (o.globalHealth) {
+      const badge = document.createElement('span');
+      badge.className = 'health-badge health-badge--' + o.globalHealth;
+      badge.textContent = HEALTH_LABEL[o.globalHealth] || HEALTH_LABEL.unclear;
+      body.appendChild(badge);
+    }
+
+    // Findings
+    if (Array.isArray(o.importantFindings) && o.importantFindings.length) {
+      const sec = document.createElement('div');
+      sec.className = 'obs-section obs-section--concern';
+      sec.innerHTML = '<h3>Lo importante</h3><ul>' +
+        o.importantFindings.map(f => `<li>${esc(f)}</li>`).join('') +
+        '</ul>';
+      body.appendChild(sec);
+    }
+
+    // Next actions
+    if (Array.isArray(o.nextActions) && o.nextActions.length) {
+      const sec = document.createElement('div');
+      sec.className = 'obs-section';
+      sec.innerHTML = '<h3>Próximas atenciones</h3><ul>' +
+        o.nextActions.map(a => `<li>${esc(a)}</li>`).join('') +
+        '</ul>';
+      body.appendChild(sec);
+    }
+
+    card.appendChild(body);
+
+    // Delete button + confirmación inline (sin modal)
+    const delBtn = document.createElement('button');
+    delBtn.className = 'obs-delete';
+    delBtn.type = 'button';
+    delBtn.setAttribute('aria-label', 'Eliminar esta observación');
+    delBtn.title = 'Eliminar';
+    delBtn.textContent = '×';
+    card.appendChild(delBtn);
+
+    delBtn.addEventListener('click', () => {
+      // Reemplaza el botón por una confirmación discreta.
+      delBtn.style.display = 'none';
+      const confirm = document.createElement('div');
+      confirm.className = 'obs-confirm';
+      confirm.innerHTML = `
+        <span>¿Eliminar?</span>
+        <button type="button" class="obs-confirm-btn obs-confirm-yes">Sí</button>
+        <button type="button" class="obs-confirm-btn obs-confirm-no">No</button>
+      `;
+      card.appendChild(confirm);
+      confirm.querySelector('.obs-confirm-yes').addEventListener('click', () => {
+        window.VerdesiaObservations.remove(o.id);
+      });
+      confirm.querySelector('.obs-confirm-no').addEventListener('click', () => {
+        confirm.remove();
+        delBtn.style.display = '';
+      });
+    });
+
+    return card;
+  }
+
+  /* ─── Reactividad ─── */
+  window.addEventListener('verdesia:observationschange', render);
+  window.addEventListener('verdesia:planchange',         render); // pour montrer/cacher la free-note
+
+  render();
+})();
+</script>
+
+</body>
+</html>

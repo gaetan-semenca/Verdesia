@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect x="0" y="0" width="512" height="512" rx="92" ry="92" fill="#F4EFE5"/>
+  <g fill="none" stroke="#3B5838" stroke-linecap="round" stroke-linejoin="round" stroke-width="18.02">
+    <!-- stem: from soil (bottom-center) curving slightly to top-center -->
+    <path d="M 256.00,393.63 C 262.55,347.75, 242.89,295.32, 256.00,249.45" />
+  </g>
+  <g fill="#3B5838">
+    <!-- left cotyledon: leaf-shaped ellipse, tilted -->
+    <path d="
+      M 256.00,249.45
+      C 190.46,229.79, 151.14,203.57, 164.25,177.36
+      C 203.57,164.25, 242.89,210.12, 256.00,249.45
+      Z" />
+    <!-- right cotyledon: mirror -->
+    <path d="
+      M 256.00,249.45
+      C 321.54,229.79, 360.86,203.57, 347.75,177.36
+      C 308.43,164.25, 269.11,210.12, 256.00,249.45
+      Z" />
+  </g>
+</svg>

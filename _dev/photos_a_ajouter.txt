@@ -1,0 +1,151 @@
+═══════════════════════════════════════════════════════════════
+  VERDÉSIA — Photos à ajouter au catalogue
+═══════════════════════════════════════════════════════════════
+
+Format attendu pour chaque photo :
+  - Format    : JPEG (.jpg)
+  - Dossier   : photos/
+  - Nom fichier (EXACT, en lowercase, snake_case) : indiqué ci-dessous
+
+Total à ajouter : 111 photos
+Couverture actuelle : 95 / 206 plantes (46%)
+
+─────────────────────────────────────────────────────────────
+  HORTALIZAS (50)
+─────────────────────────────────────────────────────────────
+  tomate_limache.jpg              [CL]  Tomate Limache  —  Solanum lycopersicum var. Limachino
+  aji_cacho_cabra.jpg             [CL]  Ají cacho de cabra  —  Capsicum annuum var. Cacho de Cabra
+  zapallo.jpg                          Zapallo  —  Cucurbita maxima
+  puerro.jpg                           Puerro  —  Allium ampeloprasum var. porrum
+  rucula.jpg                           Rúcula  —  Eruca sativa
+  repollo.jpg                          Repollo  —  Brassica oleracea var. capitata
+  haba.jpg                             Haba  —  Vicia faba
+  berenjena.jpg                        Berenjena  —  Solanum melongena
+  pimenton.jpg                         Pimentón / Pimiento  —  Capsicum annuum
+  cebolla_morada.jpg                   Cebolla morada  —  Allium cepa var.
+  zapallo_butternut.jpg                Zapallo butternut  —  Cucurbita moschata
+  tomate_cherry.jpg                    Tomate cherry  —  Solanum lycopersicum var. cerasiforme
+  alcachofa.jpg                        Alcachofa  —  Cynara scolymus
+  esparrago.jpg                        Espárrago  —  Asparagus officinalis
+  poroto_granado.jpg                   Poroto granado  —  Phaseolus vulgaris
+  nabo.jpg                             Nabo  —  Brassica rapa
+  camote.jpg                           Camote / Batata  —  Ipomoea batatas
+  bok_choy.jpg                         Bok choy / Pak choi  —  Brassica rapa subsp. chinensis
+  escarola.jpg                         Escarola  —  Cichorium endivia
+  berro.jpg                            Berro  —  Nasturtium officinale
+  mostaza_hoja.jpg                     Mostaza hoja  —  Brassica juncea
+  topinambur.jpg                       Topinambur  —  Helianthus tuberosus
+  cardo.jpg                            Cardo  —  Cynara cardunculus
+  quinoa.jpg                           Quinoa  —  Chenopodium quinoa
+  amaranto.jpg                         Amaranto  —  Amaranthus cruentus
+  linaza.jpg                           Lino / Linaza  —  Linum usitatissimum
+  cochayuyo.jpg                   [CL]  Cochayuyo  —  Durvillaea antarctica
+  oca.jpg                         [CL]  Oca  —  Oxalis tuberosa
+  yacon.jpg                       [*]  Yacón  —  Smallanthus sonchifolius
+  endivia.jpg                          Endivia  —  Cichorium intybus var. foliosum
+  radicchio.jpg                        Radicchio / Achicoria roja  —  Cichorium intybus var. foliosum
+  achicoria.jpg                        Achicoria común  —  Cichorium intybus
+  mizuna.jpg                           Mizuna  —  Brassica rapa var. nipposinica
+  tatsoi.jpg                           Tatsoi  —  Brassica rapa subsp. narinosa
+  grelos.jpg                           Grelos  —  Brassica rapa subsp. rapa
+  col_de_bruselas.jpg                  Col de Bruselas  —  Brassica oleracea var. gemmifera
+  romanesco.jpg                        Romanesco  —  Brassica oleracea var. botrytis
+  rutabaga.jpg                         Rutabaga / Colinabo  —  Brassica napus var. napobrassica
+  chirivia.jpg                         Chirivía  —  Pastinaca sativa
+  salsifi.jpg                     [*]  Salsifí / Barba de cabra  —  Tragopogon porrifolius
+  okra.jpg                        [*]  Okra / Quingombó  —  Abelmoschus esculentus
+  penca.jpg                            Penca / Acelga de penca blanca  —  Beta vulgaris var. cicla
+  cardo_comestible.jpg            [*]  Cardo comestible blanqueado  —  Cynara cardunculus var. altilis
+  berro_de_tierra.jpg                  Berro de tierra / Mastuerzo  —  Barbarea verna
+  mostaza_morada.jpg                   Mostaza morada  —  Brassica juncea var. rugosa
+  acelga_amarilla.jpg                  Acelga amarilla  —  Beta vulgaris subsp. vulgaris
+  poroto_pallar.jpg                    Poroto pallar  —  Phaseolus lunatus
+  lenteja.jpg                          Lenteja  —  Lens culinaris
+  garbanzo.jpg                         Garbanzo  —  Cicer arietinum
+  quila.jpg                       [CL]  Quila  —  Chusquea quila
+
+─────────────────────────────────────────────────────────────
+  ÁRBOLES (24)
+─────────────────────────────────────────────────────────────
+  pinon_pehuen.jpg                [CL]  Piñón (Pehuén)  —  Araucaria araucana
+  chanar.jpg                      [CL]  Chañar  —  Geoffroea decorticans
+  luma.jpg                        [*]  Luma  —  Amomyrtus luma
+  arrayan_chileno.jpg             [*]  Arrayán chileno  —  Luma apiculata
+  aromo.jpg                       [*]  Aromo  —  Acacia dealbata
+  quillay.jpg                     [CL]  Quillay  —  Quillaja saponaria
+  espino.jpg                      [CL]  Espino  —  Vachellia caven
+  notro.jpg                       [CL]  Notro / Ciruelillo  —  Embothrium coccineum
+  caqui.jpg                            Caqui / Persimón  —  Diospyros kaki
+  feijoa.jpg                           Feijoa / Guayabo del país  —  Acca sellowiana
+  pitanga.jpg                          Pitanga / Cereza de Surinam  —  Eugenia uniflora
+  jaboticaba.jpg                  [*]  Jaboticaba  —  Plinia cauliflora
+  guinda_acida.jpg                     Guinda ácida  —  Prunus cerasus
+  acerola.jpg                     [*]  Acerola / Cereza de Barbados  —  Malpighia emarginata
+  tamarillo.jpg                        Tamarillo / Tomate de árbol  —  Solanum betaceum
+  maiten.jpg                      [CL]  Maitén  —  Maytenus boaria
+  litre.jpg                       [CL]  Litre  —  Lithraea caustica
+  coigue.jpg                      [CL]  Coigüe  —  Nothofagus dombeyi
+  lenga.jpg                       [CL]  Lenga  —  Nothofagus pumilio
+  tineo.jpg                       [CL]  Tineo / Tenío  —  Weinmannia trichosperma
+  pitao.jpg                       [*]  Pitao / Pitavia  —  Pitavia punctata
+  arrayan_rojo.jpg                [CL]  Arrayán rojo / Chequén  —  Luma chequen
+  canelo_patagonico.jpg           [CL]  Canelo enano / Canelo patagónico  —  Drimys andina
+  corcolen.jpg                    [CL]  Corcolén  —  Azara integrifolia
+
+─────────────────────────────────────────────────────────────
+  FLORES (6)
+─────────────────────────────────────────────────────────────
+  pensamiento.jpg                      Pensamiento  —  Viola tricolor
+  chilco.jpg                      [CL]  Chilco  —  Fuchsia magellanica
+  azucena.jpg                          Azucena  —  Lilium candidum
+  hortensia_trepadora.jpg              Hortensia trepadora  —  Hydrangea petiolaris
+  michai_rojo.jpg                 [*]  Michay rojo / Berberis rojo  —  Berberis ilicifolia
+  chilco_rojo.jpg                 [CL]  Chilco rojo  —  Fuchsia magellanica var. macrostema
+
+─────────────────────────────────────────────────────────────
+  HIERBAS (16)
+─────────────────────────────────────────────────────────────
+  chia.jpg                             Chía  —  Salvia hispanica
+  hinojo.jpg                           Hinojo  —  Foeniculum vulgare
+  estragon.jpg                         Estragón  —  Artemisia dracunculus
+  mejorana.jpg                         Mejorana  —  Origanum majorana
+  hierba_luisa.jpg                     Hierba luisa  —  Aloysia citrodora
+  ruda.jpg                             Ruda  —  Ruta graveolens
+  ajenjo.jpg                           Ajenjo  —  Artemisia absinthium
+  matico.jpg                      [CL]  Matico  —  Buddleja globosa
+  paico.jpg                       [CL]  Paico  —  Dysphania ambrosioides
+  ajedrea.jpg                     [*]  Ajedrea  —  Satureja hortensis
+  malva.jpg                       [*]  Malva  —  Malva sylvestris
+  ortiga.jpg                      [*]  Ortiga  —  Urtica dioica
+  llanten.jpg                     [*]  Llantén  —  Plantago major
+  mil_hojas.jpg                   [*]  Milenrama / Mil hojas  —  Achillea millefolium
+  paramela.jpg                    [CL]  Paramela  —  Adesmia emarginata
+  vinagrillo.jpg                  [CL]  Vinagrillo  —  Oxalis rosea
+
+─────────────────────────────────────────────────────────────
+  FRUTAS (15)
+─────────────────────────────────────────────────────────────
+  melon.jpg                            Melón  —  Cucumis melo
+  calafate.jpg                    [CL]  Calafate  —  Berberis microphylla
+  maracuya.jpg                         Maracuyá / Fruta de la pasión  —  Passiflora edulis
+  physalis.jpg                         Physalis / Uchuva / Capulí  —  Physalis peruviana
+  grosella.jpg                         Grosella roja  —  Ribes rubrum
+  grosella_negra.jpg                   Grosella negra / Cassis  —  Ribes nigrum
+  zarzaparrilla.jpg               [CL]  Zarzaparrilla patagónica  —  Ribes magellanicum
+  cranberry_chileno.jpg           [CL]  Chaura / Cranberry chileno  —  Gaultheria mucronata
+  tuna.jpg                             Tuna verde  —  Opuntia ficus-indica
+  tuna_roja.jpg                        Tuna roja  —  Opuntia ficus-indica
+  tuna_blanca.jpg                      Tuna blanca  —  Opuntia ficus-indica
+  maqui_amarillo.jpg              [*]  Maqui amarillo  —  Aristotelia chilensis (forma amarilla)
+  michay.jpg                      [CL]  Michay  —  Berberis darwinii
+  calafate_patagonico.jpg         [CL]  Calafate patagónico  —  Berberis microphylla
+  maqui_blanco.jpg                [*]  Maqui blanco  —  Aristotelia chilensis (forma blanca)
+
+═══════════════════════════════════════════════════════════════
+  Légende : [CL] = patrimoniale chilienne   [*] = rare
+
+  Priorité éditoriale suggérée :
+    1. Patrimoniales chiliennes (identité produit)
+    2. Hortalizas et frutas couramment cultivées au Chili
+    3. Árboles natifs et rares
+═══════════════════════════════════════════════════════════════

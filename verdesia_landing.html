@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#3B5838">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Verdésia">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180-apple.png">
+<title>Verdésia — Tu compañero de jardín en Chile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ═══════════════════════════════════
+   TOKENS
+═══════════════════════════════════ */
+:root {
+  --soil:   #2A1E12;
+  --bark:   #4A3626;
+  --bark-lt:#7A6248;
+  --moss:   #3B5838;
+  --moss-lt:#4D7050;
+  --sage:   #78A07C;
+  --sage-lt:#A9C8AD;
+  --straw:  #E6D7B0;
+  --cream:  #F4EFE5;
+  --parch:  #EDE6D8;
+  --rust:   #B55A28;
+  --sun:    #C8A03A;
+  --white:  #FDFAF2;
+  --font-d: 'Playfair Display', Georgia, serif;
+  --font-b: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-m: 'DM Mono', monospace;
+  --ease:   cubic-bezier(.16,1,.3,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--white);
+  color: var(--soil);
+  font-family: var(--font-b);
+  font-size: 15.5px;
+  line-height: 1.7;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle grain */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+  opacity: .5;
+}
+
+/* ═══════════════════════════════════
+   NAV
+═══════════════════════════════════ */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 52px; height: 72px;
+  background: rgba(253,250,242,.92);
+  backdrop-filter: blur(16px) saturate(1.3);
+  border-bottom: 1px solid rgba(42,30,18,.06);
+  transition: height .3s;
+}
+.nav.scrolled { height: 56px; }
+/* Au scroll, la nav se compacte ; la tagline disparait élégamment
+   pour rester logée dans la zone claire. */
+.nav.scrolled .nav-logo::after { display: none; }
+
+.nav-logo {
+  font-family: var(--font-d); font-size: 22px;
+  color: var(--soil); text-decoration: none;
+  position: relative; line-height: 1.1;
+  letter-spacing: -.3px;
+}
+.nav-logo em { color: var(--moss); font-style: italic; }
+/* Tagline editorial — assise sous le wordmark, lisible, sans bruit */
+.nav-logo::after {
+  content: 'Cultiva tu autonomía';
+  position: absolute; top: 100%; left: 0;
+  margin-top: 6px;
+  font-family: var(--font-d); font-size: 12.5px;
+  color: var(--moss-lt); font-style: italic;
+  font-weight: 400; letter-spacing: .15px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media (max-width: 380px) { .nav-logo::after { display: none; } }
+
+.nav-center {
+  display: flex; gap: 28px; align-items: center;
+  position: absolute; left: 50%; transform: translateX(-50%);
+}
+.nav-center a {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  text-decoration: none; transition: color .18s;
+  padding-bottom: 2px; border-bottom: 1px solid transparent;
+}
+.nav-center a:hover { color: var(--bark); }
+.nav-center a.active { color: var(--soil); border-bottom-color: var(--moss); }
+
+.nav-right { display: flex; gap: 12px; align-items: center; }
+.lang-sw { display: flex; border: 1px solid rgba(42,30,18,.12); border-radius: 100px; overflow: hidden; }
+.lb { padding: 4px 10px; border: none; background: transparent; font-family: var(--font-m); font-size: 9.5px; letter-spacing: .5px; color: var(--bark-lt); cursor: pointer; transition: background .15s, color .15s; }
+.lb.on { background: var(--moss); color: var(--white); }
+
+.nav-cta {
+  padding: 8px 20px; border-radius: 100px;
+  background: var(--moss); color: var(--white);
+  font-family: var(--font-b); font-size: 13px; font-weight: 500;
+  text-decoration: none; transition: background .18s, transform .15s;
+  white-space: nowrap;
+}
+.nav-cta:hover { background: var(--soil); transform: translateY(-1px); }
+
+/* ═══════════════════════════════════
+   HERO
+═══════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  padding-top: 72px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  position: relative; overflow: hidden;
+}
+
+/* Left */
+.hero-left {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 80px 64px 80px 80px;
+  position: relative; z-index: 1;
+}
+
+.hero-eyebrow {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 32px;
+}
+.hero-eyebrow::before { content: ''; width: 22px; height: 1px; background: var(--sage); }
+.season-live {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(59,88,56,.08); border: 1px solid rgba(59,88,56,.15);
+  padding: 3px 10px; border-radius: 100px;
+}
+.sl-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); animation: live-pulse 3s ease-in-out infinite; }
+@keyframes live-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
+.hero-title {
+  font-family: var(--font-d);
+  font-size: clamp(42px, 5.5vw, 72px);
+  line-height: 1.0; letter-spacing: -2.5px;
+  color: var(--soil); margin-bottom: 24px; font-weight: 700;
+}
+.hero-title em { color: var(--moss); font-style: italic; font-weight: 400; }
+
+.hero-desc {
+  font-size: 16px; color: var(--bark-lt);
+  font-weight: 300; line-height: 1.85;
+  max-width: 420px; margin-bottom: 44px;
+}
+
+/* CTAs */
+.hero-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 15px 30px; border-radius: 100px;
+  background: var(--soil); color: var(--white);
+  font-family: var(--font-b); font-size: 15px; font-weight: 500;
+  text-decoration: none; border: none; cursor: pointer;
+  transition: background .22s, transform .15s;
+}
+.btn-primary:hover { background: var(--moss); transform: translateY(-2px); }
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; color: var(--bark-lt); font-weight: 400;
+  text-decoration: none; transition: color .18s;
+}
+.btn-secondary:hover { color: var(--moss); }
+.btn-arrow { transition: transform .2s; }
+.btn-secondary:hover .btn-arrow { transform: translateX(4px); }
+
+/* Trust strip */
+.hero-trust {
+  display: flex; gap: 36px; margin-top: 52px;
+  padding-top: 36px; border-top: 1px solid rgba(42,30,18,.09);
+}
+.trust-item {}
+.trust-val { font-family: var(--font-d); font-size: 28px; color: var(--soil); display: block; line-height: 1; letter-spacing: -.5px; }
+.trust-label { font-size: 12px; color: var(--bark-lt); margin-top: 5px; font-weight: 300; }
+
+/* Right — botanical */
+.hero-right {
+  background: var(--moss);
+  position: relative; overflow: hidden;
+}
+.hero-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+.hero-right-inner {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 48px;
+}
+
+/* Floating cards */
+.float-cards { width: 100%; max-width: 320px; }
+.float-card {
+  background: rgba(253,250,242,.93); border-radius: 12px;
+  padding: 18px 20px; margin-bottom: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0,0,0,.15);
+  animation: float-card 7s ease-in-out infinite;
+}
+.float-card:nth-child(2) { animation-delay: -2.5s; margin-left: 24px; }
+.float-card:nth-child(3) { animation-delay: -5s; }
+@keyframes float-card { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+.fc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+.fc-tag { font-family: var(--font-m); font-size: 9px; background: var(--straw); color: var(--bark-lt); padding: 2px 9px; border-radius: 100px; letter-spacing: .3px; }
+.fc-now { font-family: var(--font-m); font-size: 9px; background: rgba(59,88,56,.12); color: var(--moss); padding: 2px 9px; border-radius: 100px; }
+.fc-name { font-family: var(--font-b); font-size: 16px; color: var(--soil); margin-bottom: 2px; font-weight: 600; letter-spacing: -.1px; }
+.fc-stage { font-size: 11.5px; color: var(--sage); font-weight: 300; margin-bottom: 10px; }
+.fc-action { font-size: 12.5px; color: var(--bark-lt); font-weight: 300; line-height: 1.6; }
+.fc-action strong { color: var(--bark); font-weight: 500; }
+.fc-progress { margin-top: 10px; }
+.fc-prog-bar { height: 3px; background: rgba(42,30,18,.08); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+.fc-prog-fill { height: 100%; background: var(--moss); border-radius: 2px; }
+.fc-prog-label { font-family: var(--font-m); font-size: 9px; color: var(--sage-lt); display: flex; justify-content: space-between; }
+
+/* ═══════════════════════════════════
+   SECTION SHARED
+═══════════════════════════════════ */
+.section-eyebrow {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--sage); letter-spacing: 2.5px; text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-eyebrow::before { content: ''; width: 18px; height: 1px; background: var(--sage); }
+.section-title {
+  font-family: var(--font-d);
+  font-size: clamp(26px, 3.5vw, 42px);
+  color: var(--soil); line-height: 1.1; letter-spacing: -.5px;
+}
+.section-title em { color: var(--moss); font-style: italic; }
+.section-body {
+  font-size: 15px; color: var(--bark-lt);
+  font-weight: 300; line-height: 1.85; max-width: 500px;
+}
+
+/* Fade animations */
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity .65s var(--ease), transform .65s var(--ease); }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal:nth-child(2) { transition-delay: .08s; }
+.reveal:nth-child(3) { transition-delay: .16s; }
+.reveal:nth-child(4) { transition-delay: .24s; }
+
+/* ═══════════════════════════════════
+   SECTION 1 — HOW IT WORKS (3 pillars)
+═══════════════════════════════════ */
+.section-pillars {
+  padding: 96px 80px;
+  background: var(--cream);
+}
+.pillars-header { margin-bottom: 64px; }
+
+.pillars-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+.pillar {
+  padding: 44px 40px;
+  background: var(--white);
+  border-top: 3px solid transparent;
+  transition: border-top-color .25s, background .25s;
+  position: relative;
+}
+.pillar:hover { border-top-color: var(--moss); background: var(--parch); }
+.pillar:not(:last-child)::after {
+  content: ''; position: absolute; right: 0; top: 44px; bottom: 44px;
+  width: 1px; background: rgba(42,30,18,.07);
+}
+.pillar-num {
+  font-family: var(--font-d); font-size: 72px; font-style: italic;
+  color: rgba(42,30,18,.05); line-height: 1;
+  position: absolute; top: 24px; right: 28px;
+}
+.pillar-icon { font-size: 28px; margin-bottom: 20px; display: block; }
+.pillar-title {
+  font-family: var(--font-d); font-size: 21px;
+  color: var(--soil); margin-bottom: 12px; line-height: 1.25;
+}
+.pillar-desc { font-size: 14px; color: var(--bark-lt); font-weight: 300; line-height: 1.8; }
+.pillar-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 20px; font-family: var(--font-m); font-size: 9.5px;
+  color: var(--moss); letter-spacing: 1px; text-transform: uppercase;
+  text-decoration: none; transition: gap .18s;
+}
+.pillar-link:hover { gap: 10px; }
+
+/* ═══════════════════════════════════
+   SECTION — HOW IT WORKS (5 calm steps)
+   Editorial, typography-first. No cards.
+═══════════════════════════════════ */
+.section-howto {
+  padding: 96px 80px;
+  background: var(--white);
+}
+.howto-head { margin-bottom: 48px; max-width: 640px; }
+.howto-intro {
+  font-family: var(--font-d); font-style: italic;
+  font-size: clamp(17px, 1.8vw, 21px);
+  color: var(--bark); font-weight: 400;
+  line-height: 1.6; margin-top: 18px;
+  max-width: 560px;
+}
+.howto-steps {
+  max-width: 720px;
+  list-style: none; padding: 0; margin: 0;
+}
+.howto-step {
+  display: grid; grid-template-columns: 60px 1fr;
+  gap: 24px; align-items: baseline;
+  padding: 22px 0;
+  border-top: 1px solid rgba(42,30,18,.07);
+}
+.howto-step:last-child { border-bottom: 1px solid rgba(42,30,18,.07); }
+.howto-num {
+  font-family: var(--font-m); font-size: 11px;
+  color: var(--sage); letter-spacing: 2px;
+}
+.howto-text {
+  font-size: 15.5px; color: var(--bark);
+  font-weight: 300; line-height: 1.75;
+}
+.howto-foot {
+  margin-top: 48px; max-width: 560px;
+}
+.howto-conclusion {
+  font-size: 14px; color: var(--bark-lt);
+  font-weight: 300; line-height: 1.85;
+}
+.howto-signature {
+  margin-top: 18px;
+  font-family: var(--font-d); font-style: italic;
+  font-size: 13.5px; color: var(--sage);
+  line-height: 1.7;
+}
+
+/* ═══════════════════════════════════
+   SECTION 2 — TODAY
+═══════════════════════════════════ */
+.section-today {
+  padding: 96px 80px;
+  background: var(--white);
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 80px; align-items: center;
+}
+.today-visual {
+  border-radius: 16px; overflow: hidden;
+  background: var(--soil);
+  padding: 36px;
+  position: relative;
+}
+.today-visual::before {
+  content: ''; position: absolute; right: -40px; top: -40px;
+  width: 200px; height: 200px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.05);
+}
+
+/* Mock "today" screen */
+.mock-today { display: flex; flex-direction: column; gap: 12px; }
+.mock-date {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--sage-lt); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.mock-title {
+  font-family: var(--font-d); font-size: 22px; color: var(--white);
+  margin-bottom: 16px; line-height: 1.2;
+}
+.mock-title em { color: var(--sage-lt); font-style: italic; }
+.mock-card {
+  background: rgba(255,255,255,.07); border-radius: 10px;
+  padding: 14px 16px; border: 1px solid rgba(255,255,255,.08);
+}
+.mc-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.mc-em { font-size: 20px; }
+.mc-name { font-size: 13.5px; font-weight: 500; color: var(--straw); }
+.mc-stage { font-family: var(--font-m); font-size: 9px; color: var(--sage-lt); margin-left: auto; }
+.mc-action { font-size: 12px; color: rgba(230,215,176,.65); font-weight: 300; line-height: 1.65; }
+.mc-progress { margin-top: 10px; height: 3px; background: rgba(255,255,255,.08); border-radius: 2px; overflow: hidden; }
+.mc-prog-fill { height: 100%; background: var(--sage); border-radius: 2px; }
+
+.mock-season-badge {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 14px; background: rgba(255,255,255,.06);
+  border-radius: 8px; border: 1px solid rgba(255,255,255,.07);
+}
+.msb-icon { font-size: 18px; }
+.msb-name { font-size: 13px; color: var(--straw); font-weight: 500; }
+.msb-sub  { font-family: var(--font-m); font-size: 9px; color: var(--sage-lt); margin-top: 1px; }
+
+.today-text {}
+.today-text .section-body { margin-top: 16px; margin-bottom: 24px; }
+.today-feature {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 14px 0; border-bottom: 1px solid rgba(42,30,18,.06);
+}
+.today-feature:last-child { border-bottom: none; }
+.tf-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.tf-title { font-size: 14px; font-weight: 500; color: var(--soil); margin-bottom: 2px; }
+.tf-desc  { font-size: 13px; color: var(--bark-lt); font-weight: 300; line-height: 1.65; }
+
+/* ═══════════════════════════════════
+   SECTION 3 — PLANT PAGES
+═══════════════════════════════════ */
+.section-plants {
+  padding: 96px 80px;
+  background: var(--cream);
+}
+.plants-layout {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 80px; align-items: center; margin-top: 60px;
+}
+.plants-text {}
+.plants-text .section-body { margin-top: 16px; margin-bottom: 32px; }
+
+/* Plant info showcase */
+.plant-info-list { display: flex; flex-direction: column; gap: 0; }
+.pil-item {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 15px 0; border-bottom: 1px solid rgba(42,30,18,.07);
+}
+.pil-item:last-child { border-bottom: none; }
+.pil-icon { font-size: 17px; flex-shrink: 0; width: 28px; }
+.pil-title { font-size: 13.5px; font-weight: 500; color: var(--soil); margin-bottom: 2px; }
+.pil-desc  { font-size: 12.5px; color: var(--bark-lt); font-weight: 300; line-height: 1.6; }
+
+/* Plant card preview */
+.plant-card-preview {
+  border-radius: 16px; overflow: hidden;
+  background: var(--white); border: 1px solid rgba(42,30,18,.08);
+  box-shadow: 0 20px 60px rgba(42,30,18,.1);
+}
+.pcp-hero {
+  background: var(--moss); height: 200px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.pcp-hero-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pcp-em { font-size: 80px; position: relative; z-index: 2; animation: float-plant 7s ease-in-out infinite; }
+@keyframes float-plant { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.pcp-body { padding: 22px 24px; }
+.pcp-name { font-family: var(--font-d); font-size: 22px; color: var(--soil); margin-bottom: 3px; }
+.pcp-latin { font-size: 12px; color: var(--sage); font-style: italic; margin-bottom: 16px; }
+.pcp-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.pcp-tag {
+  font-family: var(--font-m); font-size: 9px; letter-spacing: .5px;
+  padding: 3px 9px; border-radius: 100px; background: var(--cream); color: var(--bark-lt);
+}
+.pcp-tag.green { background: rgba(59,88,56,.1); color: var(--moss); }
+.pcp-cal { display: grid; grid-template-columns: repeat(12,1fr); gap: 2px; }
+.pcp-cal-bar { height: 6px; border-radius: 2px; background: rgba(42,30,18,.06); }
+.pcp-cal-bar.on-sow  { background: rgba(200,160,58,.5); }
+.pcp-cal-bar.on-harv { background: rgba(181,90,40,.5); }
+.pcp-link {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 16px; font-family: var(--font-m); font-size: 9.5px;
+  color: var(--moss); letter-spacing: 1px; text-transform: uppercase;
+  text-decoration: none; transition: gap .18s;
+}
+.pcp-link:hover { gap: 10px; }
+
+/* ═══════════════════════════════════
+   SECTION 4 — SEEDS / HERITAGE
+═══════════════════════════════════ */
+.section-seeds {
+  background: var(--soil);
+  padding: 96px 80px;
+  position: relative; overflow: hidden;
+}
+.seeds-rings {
+  position: absolute; right: -80px; top: -80px;
+}
+.seeds-inner {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 80px; align-items: center; position: relative; z-index: 1;
+}
+.seeds-text .section-eyebrow { color: var(--sage-lt); }
+.seeds-text .section-eyebrow::before { background: var(--sage-lt); }
+.seeds-text .section-title { color: var(--white); }
+.seeds-text .section-title em { color: var(--sage-lt); }
+.seeds-text .section-body { color: rgba(230,215,176,.65); margin-top: 16px; }
+
+.seed-steps { display: flex; flex-direction: column; gap: 0; }
+.seed-step {
+  display: flex; gap: 18px; padding: 20px 0;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.seed-step:last-child { border-bottom: none; }
+.ss-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255,255,255,.07); color: var(--straw);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-size: 14px; flex-shrink: 0; margin-top: 1px;
+}
+.ss-title { font-size: 14px; font-weight: 500; color: var(--straw); margin-bottom: 4px; }
+.ss-desc  { font-size: 13px; color: rgba(230,215,176,.55); font-weight: 300; line-height: 1.75; }
+
+/* ═══════════════════════════════════
+   SECTION 5 — CHILE SPECIFIC
+═══════════════════════════════════ */
+.section-chile {
+  padding: 96px 80px;
+  background: var(--white);
+}
+.chile-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 2px; margin-top: 60px;
+}
+.chile-card {
+  padding: 40px 36px;
+  background: var(--cream);
+  border-top: 2px solid transparent;
+  transition: border-top-color .22s, background .22s;
+}
+.chile-card:hover { border-top-color: var(--rust); background: var(--parch); }
+.cc-icon { font-size: 26px; margin-bottom: 18px; display: block; }
+.cc-zone { font-family: var(--font-m); font-size: 9px; color: var(--sage); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+.cc-title { font-family: var(--font-d); font-size: 19px; color: var(--soil); margin-bottom: 10px; line-height: 1.25; }
+.cc-desc  { font-size: 13.5px; color: var(--bark-lt); font-weight: 300; line-height: 1.8; }
+
+/* ═══════════════════════════════════
+   SECTION 6 — CTA FINAL
+═══════════════════════════════════ */
+.section-cta {
+  background: var(--moss);
+  padding: 112px 80px;
+  text-align: center;
+  position: relative; overflow: hidden;
+}
+.cta-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255,255,255,.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 20%, rgba(200,160,58,.1) 0%, transparent 50%);
+}
+.cta-inner { position: relative; z-index: 1; }
+.cta-eyebrow {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--sage-lt); letter-spacing: 2.5px; text-transform: uppercase;
+  margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.cta-eyebrow::before, .cta-eyebrow::after { content: ''; width: 28px; height: 1px; background: var(--sage-lt); opacity: .5; }
+.cta-title {
+  font-family: var(--font-d);
+  font-size: clamp(34px, 5.5vw, 64px);
+  color: var(--white); line-height: 1.05;
+  letter-spacing: -2px; margin-bottom: 18px;
+}
+.cta-title em { color: var(--sage-lt); font-style: italic; font-weight: 400; }
+.cta-sub {
+  font-size: 16px; color: rgba(253,250,242,.65);
+  font-weight: 300; max-width: 440px;
+  margin: 0 auto 52px; line-height: 1.8;
+}
+.cta-actions {
+  display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 36px;
+}
+.btn-white {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 15px 34px; border-radius: 100px;
+  background: var(--white); color: var(--moss);
+  font-family: var(--font-b); font-size: 15px; font-weight: 500;
+  text-decoration: none; transition: background .2s, transform .15s;
+}
+.btn-white:hover { background: var(--straw); transform: translateY(-2px); }
+.btn-ghost-white {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 15px 28px; border-radius: 100px;
+  border: 1.5px solid rgba(255,255,255,.3); color: rgba(253,250,242,.85);
+  font-family: var(--font-b); font-size: 15px; font-weight: 400;
+  text-decoration: none; transition: border-color .2s, transform .15s;
+}
+.btn-ghost-white:hover { border-color: rgba(255,255,255,.6); transform: translateY(-2px); }
+
+.cta-note {
+  font-family: var(--font-m); font-size: 10px;
+  color: rgba(253,250,242,.35); letter-spacing: .5px;
+}
+
+/* ═══════════════════════════════════
+   FOOTER
+═══════════════════════════════════ */
+footer {
+  background: var(--soil);
+  padding: 44px 80px 36px;
+}
+.footer-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  flex-wrap: wrap; gap: 32px;
+  padding-bottom: 36px; border-bottom: 1px solid rgba(255,255,255,.06);
+  margin-bottom: 28px;
+}
+.footer-brand .brand-name { font-family: var(--font-d); font-size: 20px; color: var(--straw); font-style: italic; display: block; margin-bottom: 8px; }
+.footer-brand p { font-size: 12.5px; color: rgba(230,215,176,.4); max-width: 220px; line-height: 1.65; font-weight: 300; }
+
+.footer-col h4 { font-family: var(--font-m); font-size: 9px; color: rgba(230,215,176,.3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px; }
+.footer-col a { display: block; color: rgba(230,215,176,.45); font-size: 13px; margin-bottom: 8px; text-decoration: none; font-weight: 300; transition: color .18s; }
+.footer-col a:hover { color: var(--straw); }
+
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 12px;
+  font-size: 12px; color: rgba(230,215,176,.25);
+  font-family: var(--font-m);
+}
+
+/* ═══════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════ */
+@media (max-width: 1024px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-left { padding: 60px 28px 48px; }
+  .hero-right { min-height: 380px; }
+  .section-pillars, .section-howto, .section-today, .section-plants, .section-seeds, .section-chile, .section-cta { padding: 64px 28px; }
+  .section-today, .plants-layout, .seeds-inner { grid-template-columns: 1fr; gap: 44px; }
+  .pillars-grid, .chile-grid { grid-template-columns: 1fr; }
+  .pillar:not(:last-child)::after { display: none; }
+  .nav-center { display: none; }
+  footer { padding: 36px 28px 28px; }
+  .hero-trust { gap: 24px; flex-wrap: wrap; }
+}
+@media (max-width: 640px) {
+  .hero-title { font-size: 40px; letter-spacing: -1.5px; }
+  .hero-left { padding: 44px 20px 36px; }
+  .hero-actions { flex-direction: column; align-items: flex-start; }
+  .nav { padding: 0 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Shared modules — landing solo necesita lang persistence (sin onboarding) -->
+<script src="storage.js"></script>
+<!-- Façade régionale : DOIT être chargée AVANT i18n.js pour que t() puisse
+     résoudre {region} dès le premier applyLang(). -->
+<script src="verdesia_region_config.js"></script>
+<script src="verdesia_plan.js"></script>
+<script src="i18n.js"></script>
+<script src="verdesia_profile.js" defer></script>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <a href="verdesia_landing.html" class="nav-logo">Verd<em>ésia</em></a>
+  <div class="nav-center">
+    <a href="verdesia_landing.html" id="navHome"   class="active">Inicio</a>
+    <a href="verdesia_today.html"      id="navToday">Hoy</a>
+    <a href="verdesia_jardin.html"     id="navGarden">Mi jardín</a>
+    <a href="verdesia_explorer.html"   id="navPlants">Plantas</a>
+    <a href="verdesia_brote.html"      id="navDiag">Lectura del huerto</a>
+    <a href="verdesia_observaciones.html" id="navMemoria">Memoria</a>
+  </div>
+  <div class="nav-right">
+    <a href="verdesia_today.html" class="nav-cta" id="navCta">Entrar a mi jardín</a>
+  </div>
+</nav>
+
+<!-- ═══════ HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">
+      <span id="heroEyebrow">Jardín · Santiago · Chile</span>
+      <div class="season-live">
+        <div class="sl-dot"></div>
+        <span id="heroBadge">Primavera</span>
+      </div>
+    </div>
+
+    <h1 class="hero-title" id="heroTitle">
+      Sabe qué<br>plantar <em>hoy.</em>
+    </h1>
+
+    <p class="hero-desc" id="heroDesc">
+      Verdésia es un compañero de jardín para Chile. Te dice qué sembrar esta semana, sigue el crecimiento de tus plantas, y conserva el conocimiento de tus semillas, saison tras saison.
+    </p>
+
+    <div class="hero-actions">
+      <a href="verdesia_today.html" class="btn-primary">
+        🌱 <span id="heroCta1">Entrar a mi jardín</span>
+      </a>
+      <a href="verdesia_explorer.html" class="btn-secondary">
+        <span id="heroCta2">Explorar plantas</span>
+        <span class="btn-arrow">→</span>
+      </a>
+    </div>
+
+    <div class="hero-trust">
+      <div class="trust-item">
+        <span class="trust-val" id="tv1">Hoy</span>
+        <div class="trust-label" id="tl1">Lo que necesita tu jardín ahora mismo</div>
+      </div>
+      <div class="trust-item">
+        <span class="trust-val">Chile</span>
+        <div class="trust-label" id="tl2">Calendario para el hemisferio Sur</div>
+      </div>
+      <div class="trust-item">
+        <span class="trust-val">🌱</span>
+        <div class="trust-label" id="tl3">Semillas, cultivo, memoria</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <svg class="hero-svg" viewBox="0 0 600 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="300" cy="400" r="280" stroke="white" stroke-width=".5" opacity=".07"/>
+      <circle cx="300" cy="400" r="200" stroke="white" stroke-width=".4" opacity=".05"/>
+      <circle cx="300" cy="400" r="120" stroke="white" stroke-width=".4" opacity=".04"/>
+      <ellipse cx="300" cy="400" rx="280" ry="155" stroke="white" stroke-width=".4" opacity=".04"/>
+      <ellipse cx="300" cy="400" rx="155" ry="280" stroke="white" stroke-width=".4" opacity=".04"/>
+      <line x1="300" y1="80" x2="300" y2="720" stroke="white" stroke-width=".3" opacity=".04"/>
+      <line x1="20" y1="400" x2="580" y2="400" stroke="white" stroke-width=".3" opacity=".04"/>
+    </svg>
+
+    <div class="hero-right-inner">
+      <div class="float-cards">
+
+        <!-- Card 1 — Hoy -->
+        <div class="float-card">
+          <div class="fc-top">
+            <span class="fc-tag" id="fc1tag">🌸 Primavera · Santiago</span>
+            <span class="fc-now" id="fc1now">Esta semana</span>
+          </div>
+          <div class="fc-name">🍅 <span id="fc1name">Tomate</span></div>
+          <div class="fc-stage" id="fc1stage">Crecimiento vegetativo · Día 38</div>
+          <div class="fc-action" id="fc1action"><strong>Ahora:</strong> Tutorar y eliminar brotes axilares. Regar en la base.</div>
+          <div class="fc-progress">
+            <div class="fc-prog-bar"><div class="fc-prog-fill" style="width:55%"></div></div>
+            <div class="fc-prog-label"><span id="fc1s1">Germinación</span><span id="fc1s2">Cosecha</span></div>
+          </div>
+        </div>
+
+        <!-- Card 2 — Planta -->
+        <div class="float-card">
+          <div class="fc-top">
+            <span class="fc-tag">Csb / Cfa · Mediterráneo</span>
+          </div>
+          <div class="fc-name">🍓 <span id="fc2name">Frutilla</span></div>
+          <div class="fc-stage" id="fc2stage">Floración · Día 72</div>
+          <div class="fc-action" id="fc2action"><strong>Esta semana:</strong> Polinización en curso. Colocar paja debajo de los frutos.</div>
+          <div class="fc-progress">
+            <div class="fc-prog-bar"><div class="fc-prog-fill" style="width:72%"></div></div>
+            <div class="fc-prog-label"><span id="fc2s1">Instalación</span><span id="fc2s2">Cosecha</span></div>
+          </div>
+        </div>
+
+        <!-- Card 3 — Note -->
+        <div class="float-card">
+          <div class="fc-top">
+            <span class="fc-tag" id="fc3tag">📝 Observación</span>
+            <span style="font-family:var(--font-m);font-size:9px;color:var(--sage-lt)">Ayer</span>
+          </div>
+          <div class="fc-name">🌿 <span id="fc3name">Albahaca</span></div>
+          <div style="font-size:12.5px;color:var(--bark-lt);font-weight:300;line-height:1.65;margin-top:6px" id="fc3note">«Flores apareciendo, pinzar hoy antes de que abran. Aroma intenso.»</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ HOW IT WORKS — 5 calm steps (editorial, no cards) -->
+<section class="section-howto">
+  <div class="howto-head">
+    <div class="section-eyebrow reveal">Cómo funciona</div>
+    <h2 class="section-title reveal">Un cuaderno vivo<br>para tu <em>jardín.</em></h2>
+    <p class="howto-intro reveal">Verdésia acompaña el ritmo natural de tus cultivos, estaciones y espacios.</p>
+  </div>
+  <ol class="howto-steps">
+    <li class="howto-step reveal">
+      <div class="howto-num">01</div>
+      <div class="howto-text">Explora plantas adaptadas a Chile: hortalizas, flores, hierbas, árboles y variedades patrimoniales.</div>
+    </li>
+    <li class="howto-step reveal">
+      <div class="howto-num">02</div>
+      <div class="howto-text">Añade a tu jardín personal las plantas que cultivas.</div>
+    </li>
+    <li class="howto-step reveal">
+      <div class="howto-num">03</div>
+      <div class="howto-text">Organiza tu espacio libremente en una grilla visual, como un verdadero huerto.</div>
+    </li>
+    <li class="howto-step reveal">
+      <div class="howto-num">04</div>
+      <div class="howto-text">Verdésia sigue el ritmo de las estaciones australes y muestra la evolución natural de cada planta.</div>
+    </li>
+    <li class="howto-step reveal">
+      <div class="howto-num">05</div>
+      <div class="howto-text">Observa buenas asociaciones entre especies, evita vecindades difíciles, y aprende poco a poco a cultivar con autonomía.</div>
+    </li>
+  </ol>
+  <div class="howto-foot">
+    <p class="howto-conclusion reveal">Todo funciona directamente en tu dispositivo. Sin cuenta. Sin nube. Sin distracciones.</p>
+    <p class="howto-signature reveal">Diseñado para Chile.<br>Pensado para ritmos lentos y jardines reales.</p>
+  </div>
+</section>
+
+<!-- ═══════ PILLARS -->
+<section class="section-pillars" id="como-funciona">
+  <div class="pillars-header">
+    <div class="section-eyebrow reveal">Tres caminos</div>
+    <h2 class="section-title reveal" id="pillarsTitle">Tres cosas simples,<br>hechas <em>bien.</em></h2>
+  </div>
+  <div class="pillars-grid">
+    <div class="pillar reveal">
+      <span class="pillar-num">1</span>
+      <span class="pillar-icon">☀️</span>
+      <h3 class="pillar-title" id="p1title">Lo que hacer hoy</h3>
+      <p class="pillar-desc"  id="p1desc">Verdésia sabe la temporada en Chile, tu zona, y el estado de cada planta. Cada mañana te dice exactamente qué necesita tu jardín esta semana.</p>
+      <a href="verdesia_today.html" class="pillar-link" id="p1link">Ver hoy →</a>
+    </div>
+    <div class="pillar reveal">
+      <span class="pillar-num">2</span>
+      <span class="pillar-icon">📖</span>
+      <h3 class="pillar-title" id="p2title">Conocer tus plantas</h3>
+      <p class="pillar-desc"  id="p2desc">Fichas botánicas completas: cuándo sembrar, etapas de crecimiento, asociaciones, nutrición, y cómo recolectar las semillas. Información útil, no genérica.</p>
+      <a href="verdesia_explorer.html" class="pillar-link" id="p2link">Ver fichas →</a>
+    </div>
+    <div class="pillar reveal">
+      <span class="pillar-num">3</span>
+      <span class="pillar-icon">🧠</span>
+      <h3 class="pillar-title" id="p3title">Recordar tu jardín</h3>
+      <p class="pillar-desc"  id="p3desc">Anota lo que observas, sigue el progreso de cada planta, conserva la memoria de tus cultivos saison tras saison. Tu jardín, documentado.</p>
+      <a href="verdesia_jardin.html" class="pillar-link" id="p3link">Mi jardín →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ TODAY SECTION -->
+<section class="section-today" id="hoy">
+  <div class="today-visual reveal">
+    <div class="mock-today">
+      <div class="mock-date" id="mockDate">Martes, Sep 2025 · Santiago, Chile</div>
+      <div class="mock-title" id="mockTitle">Buenos días —<br><em>es primavera</em></div>
+
+      <div class="mock-card">
+        <div class="mc-top">
+          <span class="mc-em">🍅</span>
+          <span class="mc-name" id="mc1name">Tomate</span>
+          <span class="mc-stage" id="mc1stage">Crecimiento · Día 38</span>
+        </div>
+        <div class="mc-action" id="mc1action">Tutorar y eliminar brotes axilares. Regar en la base, nunca sobre el follaje.</div>
+        <div class="mc-progress"><div class="mc-prog-fill" style="width:52%"></div></div>
+      </div>
+
+      <div class="mock-card">
+        <div class="mc-top">
+          <span class="mc-em">🌿</span>
+          <span class="mc-name" id="mc2name">Albahaca</span>
+          <span class="mc-stage" id="mc2stage">Crecimiento · Día 22</span>
+        </div>
+        <div class="mc-action" id="mc2action">Pinzar los ápices antes de que florezcan. Cortar las flores para prolongar la producción.</div>
+        <div class="mc-progress"><div class="mc-prog-fill" style="width:65%"></div></div>
+      </div>
+
+      <div class="mock-season-badge">
+        <span class="msb-icon">🌸</span>
+        <div>
+          <div class="msb-name" id="msbName">Primavera austral</div>
+          <div class="msb-sub" id="msbSub">Sep · Oct · Nov · Santiago</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="today-text reveal">
+    <div class="section-eyebrow" id="todayEyebrow">Página de inicio</div>
+    <h2 class="section-title" id="todayTitle">Tu jardín,<br>cada <em>mañana.</em></h2>
+    <p class="section-body" id="todayBody">Abre Verdésia y en 30 segundos sabes qué está pasando en tu jardín esta semana. Sin notificaciones. Sin ruido. Solo lo que importa.</p>
+
+    <div style="margin-top:28px">
+      <div class="today-feature">
+        <span class="tf-icon">🗓️</span>
+        <div><div class="tf-title" id="tf1t">Temporada en tiempo real</div><div class="tf-desc" id="tf1d">El calendario del hemisferio Sur, siempre correcto para Santiago.</div></div>
+      </div>
+      <div class="today-feature">
+        <span class="tf-icon">🌱</span>
+        <div><div class="tf-title" id="tf2t">Estado de cada planta</div><div class="tf-desc" id="tf2d">Qué etapa, cuántos días, y qué hacer exactamente esta semana.</div></div>
+      </div>
+      <div class="today-feature">
+        <span class="tf-icon">🌤</span>
+        <div><div class="tf-title" id="tf3t">Qué sembrar ahora</div><div class="tf-desc" id="tf3d">Las plantas indicadas para tu zona y tu temporada, actualizadas automáticamente.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ PLANTS -->
+<section class="section-plants" id="plantas">
+  <div class="reveal">
+    <div class="section-eyebrow" id="plantsEyebrow">Fichas de plantas</div>
+    <h2 class="section-title" id="plantsTitle">Conocimiento botánico<br>para <em>jardineros reales.</em></h2>
+  </div>
+
+  <div class="plants-layout">
+    <div class="plants-text reveal">
+      <p class="section-body" id="plantsBody">Cada ficha contiene todo lo que necesitas saber sobre una planta — desde la siembra hasta la recolección de semillas. Información específica para Chile, no genérica.</p>
+
+      <div class="plant-info-list" style="margin-top:28px">
+        <div class="pil-item"><span class="pil-icon">📅</span><div><div class="pil-title" id="pil1t">Cuándo plantar en Chile</div><div class="pil-desc" id="pil1d">Calendarios para el hemisferio Sur, con zonas climáticas — de Santiago a Valdivia.</div></div></div>
+        <div class="pil-item"><span class="pil-icon">🌱</span><div><div class="pil-title" id="pil2t">Etapas de crecimiento</div><div class="pil-desc" id="pil2d">Desde la germinación hasta la cosecha, con qué hacer en cada etapa.</div></div></div>
+        <div class="pil-item"><span class="pil-icon">🤝</span><div><div class="pil-title" id="pil3t">Plantas compañeras</div><div class="pil-desc" id="pil3d">Qué plantar junto, qué evitar, y por qué — explicado simplemente.</div></div></div>
+        <div class="pil-item"><span class="pil-icon">🥗</span><div><div class="pil-title" id="pil4t">Nutrición</div><div class="pil-desc" id="pil4d">Los beneficios reales de lo que cultivas — vitaminas, minerales, usos medicinales.</div></div></div>
+        <div class="pil-item"><span class="pil-icon">🌾</span><div><div class="pil-title" id="pil5t">Recolección de semillas</div><div class="pil-desc" id="pil5d">Guía paso a paso para guardar, secar y conservar las semillas de cada planta.</div></div></div>
+      </div>
+
+      <a href="verdesia_plante.html?id=tomate" class="btn-primary" style="margin-top:32px;display:inline-flex" id="plantsBtn">
+        📖 <span id="plantsBtnTxt">Ver ficha del tomate →</span>
+      </a>
+    </div>
+
+    <div class="plant-card-preview reveal">
+      <div class="pcp-hero">
+        <svg class="pcp-hero-svg" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="200" cy="100" r="180" stroke="white" stroke-width=".5" opacity=".07"/>
+          <circle cx="200" cy="100" r="120" stroke="white" stroke-width=".4" opacity=".05"/>
+          <ellipse cx="200" cy="100" rx="180" ry="80" stroke="white" stroke-width=".4" opacity=".04"/>
+        </svg>
+        <div class="pcp-em">🍅</div>
+      </div>
+      <div class="pcp-body">
+        <div class="pcp-name" id="pcpName">Tomate</div>
+        <div class="pcp-latin">Solanum lycopersicum</div>
+        <div class="pcp-tags">
+          <span class="pcp-tag green">Csb / Cfa</span>
+          <span class="pcp-tag green" id="pcpSow">Siembra Ago–Oct</span>
+          <span class="pcp-tag" id="pcpHarv">Cosecha Dic–Mar</span>
+          <span class="pcp-tag">60 cm</span>
+        </div>
+        <div style="font-family:var(--font-m);font-size:8.5px;color:var(--sage-lt);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase" id="pcpCalLabel">Calendario · Hémisphère Sud</div>
+        <div class="pcp-cal">
+          <!-- Sow: Aug-Oct (7,8,9), Harv: Dec-Mar (11,0,1,2) -->
+          <div class="pcp-cal-bar"></div>
+          <div class="pcp-cal-bar on-harv"></div>
+          <div class="pcp-cal-bar on-harv"></div>
+          <div class="pcp-cal-bar"></div>
+          <div class="pcp-cal-bar"></div>
+          <div class="pcp-cal-bar"></div>
+          <div class="pcp-cal-bar"></div>
+          <div class="pcp-cal-bar on-sow"></div>
+          <div class="pcp-cal-bar on-sow"></div>
+          <div class="pcp-cal-bar on-sow"></div>
+          <div class="pcp-cal-bar"></div>
+          <div class="pcp-cal-bar on-harv"></div>
+        </div>
+        <a href="verdesia_plante.html?id=tomate" class="pcp-link" id="pcpLink">Ver ficha completa →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ SEEDS -->
+<section class="section-seeds" id="semillas">
+  <svg class="seeds-rings" viewBox="0 0 400 400" width="400" height="400" fill="none">
+    <circle cx="200" cy="200" r="180" stroke="white" stroke-width=".6" opacity=".06"/>
+    <circle cx="200" cy="200" r="120" stroke="white" stroke-width=".4" opacity=".04"/>
+    <circle cx="200" cy="200" r="60"  stroke="white" stroke-width=".4" opacity=".04"/>
+  </svg>
+
+  <div class="seeds-inner">
+    <div class="seeds-text reveal">
+      <div class="section-eyebrow" id="seedsEyebrow">Patrimonio semillero</div>
+      <h2 class="section-title" id="seedsTitle">Guardar semillas<br>es <em>transmitir vida.</em></h2>
+      <p class="section-body" id="seedsBody">Cada semilla guardada es un gesto de continuidad. En Chile, miles de variedades locales — tomate limache, zapallo panare, ají cacho de cabra — sobreviven gracias a los jardineros que las preservan temporada tras temporada.</p>
+      <a href="verdesia_plante.html?id=tomate_limache#seedsSection" class="pillar-link" style="color:var(--sage-lt);margin-top:24px" id="seedsLink">Ver guía de recolección →</a>
+    </div>
+
+    <div class="seed-steps reveal">
+      <div class="seed-step">
+        <div class="ss-num">1</div>
+        <div><div class="ss-title" id="ss1t">Elegir el fruto más hermoso</div><div class="ss-desc" id="ss1d">Del plant más vigoroso, dejar sobremadurar ligeramente hasta que ceda al tacto.</div></div>
+      </div>
+      <div class="seed-step">
+        <div class="ss-num">2</div>
+        <div><div class="ss-title" id="ss2t">Fermentación 2–4 días</div><div class="ss-desc" id="ss2d">Pulpa y semillas en agua a 22°C. Remueve cada día. Elimina el gel inhibidor de germinación.</div></div>
+      </div>
+      <div class="seed-step">
+        <div class="ss-num">3</div>
+        <div><div class="ss-title" id="ss3t">Lavar y seleccionar</div><div class="ss-desc" id="ss3d">Las semillas viables se hunden. Eliminar las que flotan — no germinarán.</div></div>
+      </div>
+      <div class="seed-step">
+        <div class="ss-num">4</div>
+        <div><div class="ss-title" id="ss4t">Secar 10–14 días</div><div class="ss-desc" id="ss4d">En plato de cerámica, a la sombra, a menos de 35°C. Nunca bajo sol directo.</div></div>
+      </div>
+      <div class="seed-step">
+        <div class="ss-num">5</div>
+        <div><div class="ss-title" id="ss5t">Guardar y etiquetar</div><div class="ss-desc" id="ss5d">Sobre kraft + frasco hermético + sílica gel. Variedad, fecha, zona. Duración: 4–6 años.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ CHILE -->
+<section class="section-chile" id="chile">
+  <div class="reveal">
+    <div class="section-eyebrow" id="chileEyebrow">Hecho para Chile</div>
+    <h2 class="section-title" id="chileTitle">Tu clima, tu estación,<br>tu <em>jardín real.</em></h2>
+  </div>
+  <div class="chile-grid">
+    <div class="chile-card reveal">
+      <span class="cc-icon">🌤</span>
+      <div class="cc-zone">Zona Central · Csb</div>
+      <div class="cc-title" id="cc1title">Santiago y alrededores</div>
+      <p class="cc-desc" id="cc1desc">Clima mediterráneo con veranos secos y calurosos. Ideal para tomates, zapallos, pimientos y frutillas. Primavera templada, sin heladas fuertes desde octubre.</p>
+    </div>
+    <div class="chile-card reveal">
+      <span class="cc-icon">🌧</span>
+      <div class="cc-zone">Sur Húmedo · Cfb</div>
+      <div class="cc-title" id="cc2title">Valdivia, Los Lagos</div>
+      <p class="cc-desc" id="cc2desc">Abundantes lluvias, inviernos más fríos. Temporadas cortas pero productivas. Hierbas, lechugas y frutos del bosque se adaptan naturalmente.</p>
+    </div>
+    <div class="chile-card reveal">
+      <span class="cc-icon">☀️</span>
+      <div class="cc-zone">Norte Semiárido · BSk</div>
+      <div class="cc-title" id="cc3title">Coquimbo, Atacama</div>
+      <p class="cc-desc" id="cc3desc">Poca lluvia, calor intenso. Cultivos adaptados a la sequía: ajíes, tomates, cactáceas comestibles. Riego controlado esencial.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ CTA -->
+<section class="section-cta">
+  <div class="cta-inner">
+    <div class="cta-eyebrow" id="ctaEyebrow">Empieza hoy</div>
+    <h2 class="cta-title" id="ctaTitle">Tu jardín<br>empieza <em>aquí.</em></h2>
+    <p class="cta-sub" id="ctaSub">Verdésia es gratuito, sin registros, sin complicaciones. Entra, añade tu primera planta, y empieza a cultivar con más conciencia.</p>
+    <div class="cta-actions">
+      <a href="verdesia_today.html" class="btn-white" id="ctaBtn1">
+        🌱 <span id="ctaBtn1Txt">Entrar a mi jardín</span>
+      </a>
+      <a href="verdesia_explorer.html" class="btn-ghost-white" id="ctaBtn2">
+        <span id="ctaBtn2Txt">Explorar plantas →</span>
+      </a>
+    </div>
+    <p class="cta-note" id="ctaNote">Sin registro · Sin pago · Solo jardinería</p>
+  </div>
+</section>
+
+<!-- ═══════ FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <span class="brand-name">Verdésia</span>
+      <p id="ftTagline">Compañero de jardín para Chile. Cultiva con consciencia, saison tras saison.</p>
+    </div>
+    <div class="footer-col">
+      <h4 id="ftCol1">Producto</h4>
+      <a href="verdesia_today.html" id="ftl1">Hoy en mi jardín</a>
+      <a href="verdesia_jardin.html" id="ftl2">Mi jardín</a>
+      <a href="verdesia_explorer.html" id="ftl3">Fichas de plantas</a>
+      <a href="verdesia_brote.html" id="ftlDiag">Lectura del huerto</a>
+      <a href="verdesia_observaciones.html" id="ftlMemoria">Memoria del huerto</a>
+    </div>
+    <div class="footer-col">
+      <h4 id="ftCol2">Aprender</h4>
+      <a href="verdesia_plante.html?id=tomate#calSection" id="ftl4">Calendario de siembras</a>
+      <a href="verdesia_plante.html?id=tomate_limache#seedsSection" id="ftl5">Recolectar semillas</a>
+      <a href="verdesia_plante.html?id=tomate#companionsSection" id="ftl6">Plantas compañeras</a>
+    </div>
+    <div class="footer-col">
+      <h4 id="ftCol3">Chile</h4>
+      <a href="#" id="ftl7">Zona Central · Csb</a>
+      <a href="#" id="ftl8">Sur Húmedo · Cfb</a>
+      <a href="#" id="ftl9">Norte Semiárido</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 Verdésia · <span id="ftRights">Todos los derechos reservados</span></span>
+  </div>
+</footer>
+
+<script>
+/* ══════════════════════════════════════════════
+   SEASON DETECTION
+══════════════════════════════════════════════ */
+const month = new Date().getMonth(); // 0=Jan
+function getSeason(m) {
+  if ([11,0,1].includes(m))  return 'summer';
+  if ([2,3,4].includes(m))   return 'autumn';
+  if ([5,6,7].includes(m))   return 'winter';
+  return 'spring';
+}
+const season = getSeason(month);
+
+const SEASON_ES = { spring:'Primavera', summer:'Verano', autumn:'Otoño', winter:'Invierno' };
+const SEASON_FR = { spring:'Printemps', summer:'Été',   autumn:'Automne', winter:'Hiver' };
+
+/* ══════════════════════════════════════════════
+   TRANSLATIONS
+══════════════════════════════════════════════ */
+let lang = 'es';
+
+const T = {
+  es: {
+    navCta:'Entrar a mi jardín',
+    /* nav links migrated to nav.* in i18n.js — handled by navMap in applyLang */
+    heroEyebrow:'Jardín · Santiago · Chile',
+    heroTitle:'Sabe qué<br>plantar <em>hoy.</em>',
+    heroDesc:'Verdésia es un compañero de jardín para Chile. Te dice qué sembrar esta semana, sigue el crecimiento de tus plantas, y conserva el conocimiento de tus semillas, saison tras saison.',
+    heroCta1:'Entrar a mi jardín', heroCta2:'Explorar plantas',
+    tl1:'Lo que necesita tu jardín ahora mismo', tl2:'Calendario para el hemisferio Sur', tl3:'Semillas, cultivo, memoria',
+    fc1tag:'🌸 Primavera · Santiago', fc1now:'Esta semana',
+    fc1name:'Tomate', fc1stage:'Crecimiento vegetativo · Día 38',
+    fc1action:'<strong>Ahora:</strong> Tutorar y eliminar brotes axilares. Regar en la base.',
+    fc1s1:'Germinación', fc1s2:'Cosecha',
+    fc2name:'Frutilla', fc2stage:'Floración · Día 72',
+    fc2action:'<strong>Esta semana:</strong> Polinización en curso. Colocar paja debajo de los frutos.',
+    fc2s1:'Instalación', fc2s2:'Cosecha',
+    fc3tag:'📝 Observación', fc3name:'Albahaca',
+    fc3note:'«Flores apareciendo, pinzar hoy antes de que abran. Aroma intenso.»',
+    pillarsEyebrow:'Cómo funciona',
+    pillarsTitle:'Tres cosas simples,<br>hechas <em>bien.</em>',
+    p1title:'Lo que hacer hoy', p1desc:'Verdésia sabe la temporada en Chile, tu zona, y el estado de cada planta. Cada mañana te dice exactamente qué necesita tu jardín esta semana.', p1link:'Ver hoy →',
+    p2title:'Conocer tus plantas', p2desc:'Fichas botánicas completas: cuándo sembrar, etapas de crecimiento, asociaciones, nutrición, y cómo recolectar las semillas. Información útil, no genérica.', p2link:'Ver fichas →',
+    p3title:'Recordar tu jardín', p3desc:'Anota lo que observas, sigue el progreso de cada planta, conserva la memoria de tus cultivos saison tras saison. Tu jardín, documentado.', p3link:'Mi jardín →',
+    mockDate:'Martes, Sep 2025 · Santiago, Chile',
+    mockTitle:'Buenos días —<br><em>es primavera</em>',
+    mc1name:'Tomate', mc1stage:'Crecimiento · Día 38',
+    mc1action:'Tutorar y eliminar brotes axilares. Regar en la base, nunca sobre el follaje.',
+    mc2name:'Albahaca', mc2stage:'Crecimiento · Día 22',
+    mc2action:'Pinzar los ápices antes de que florezcan. Cortar las flores para prolongar la producción.',
+    msbName:'Primavera austral', msbSub:'Sep · Oct · Nov · Santiago',
+    todayEyebrow:'Página de inicio',
+    todayTitle:'Tu jardín,<br>cada <em>mañana.</em>',
+    todayBody:'Abre Verdésia y en 30 segundos sabes qué está pasando en tu jardín esta semana. Sin notificaciones. Sin ruido. Solo lo que importa.',
+    tf1t:'Temporada en tiempo real', tf1d:'El calendario del hemisferio Sur, siempre correcto para Santiago.',
+    tf2t:'Estado de cada planta', tf2d:'Qué etapa, cuántos días, y qué hacer exactamente esta semana.',
+    tf3t:'Qué sembrar ahora', tf3d:'Las plantas indicadas para tu zona y tu temporada, actualizadas automáticamente.',
+    plantsEyebrow:'Fichas de plantas',
+    plantsTitle:'Conocimiento botánico<br>para <em>jardineros reales.</em>',
+    plantsBody:'Cada ficha contiene todo lo que necesitas saber sobre una planta — desde la siembra hasta la recolección de semillas. Información específica para Chile, no genérica.',
+    pil1t:'Cuándo plantar en Chile', pil1d:'Calendarios para el hemisferio Sur, con zonas climáticas — de Santiago a Valdivia.',
+    pil2t:'Etapas de crecimiento', pil2d:'Desde la germinación hasta la cosecha, con qué hacer en cada etapa.',
+    pil3t:'Plantas compañeras', pil3d:'Qué plantar junto, qué evitar, y por qué — explicado simplemente.',
+    pil4t:'Nutrición', pil4d:'Los beneficios reales de lo que cultivas — vitaminas, minerales, usos medicinales.',
+    pil5t:'Recolección de semillas', pil5d:'Guía paso a paso para guardar, secar y conservar las semillas de cada planta.',
+    plantsBtn:'📖 ', plantsBtnTxt:'Ver ficha del tomate →',
+    pcpName:'Tomate', pcpSow:'Siembra Ago–Oct', pcpHarv:'Cosecha Dic–Mar', pcpCalLabel:'Calendario · Hemisferio Sur', pcpLink:'Ver ficha completa →',
+    seedsEyebrow:'Patrimonio semillero',
+    seedsTitle:'Guardar semillas<br>es <em>transmitir vida.</em>',
+    seedsBody:'Cada semilla guardada es un gesto de continuidad. En Chile, miles de variedades locales — tomate limache, zapallo panare, ají cacho de cabra — sobreviven gracias a los jardineros que las preservan temporada tras temporada.',
+    seedsLink:'Ver guía de recolección →',
+    ss1t:'Elegir el fruto más hermoso', ss1d:'Del plant más vigoroso, dejar sobremadurar ligeramente hasta que ceda al tacto.',
+    ss2t:'Fermentación 2–4 días', ss2d:'Pulpa y semillas en agua a 22°C. Remueve cada día. Elimina el gel inhibidor de germinación.',
+    ss3t:'Lavar y seleccionar', ss3d:'Las semillas viables se hunden. Eliminar las que flotan — no germinarán.',
+    ss4t:'Secar 10–14 días', ss4d:'En plato de cerámica, a la sombra, a menos de 35°C. Nunca bajo sol directo.',
+    ss5t:'Guardar y etiquetar', ss5d:'Sobre kraft + frasco hermético + sílica gel. Variedad, fecha, zona. Duración: 4–6 años.',
+    chileEyebrow:'Hecho para Chile',
+    chileTitle:'Tu clima, tu estación,<br>tu <em>jardín real.</em>',
+    cc1title:'Santiago y alrededores', cc1desc:'Clima mediterráneo con veranos secos y calurosos. Ideal para tomates, zapallos, pimientos y frutillas. Primavera templada, sin heladas fuertes desde octubre.',
+    cc2title:'Valdivia, Los Lagos', cc2desc:'Abundantes lluvias, inviernos más fríos. Temporadas cortas pero productivas. Hierbas, lechugas y frutos del bosque se adaptan naturalmente.',
+    cc3title:'Coquimbo, Atacama', cc3desc:'Poca lluvia, calor intenso. Cultivos adaptados a la sequía: ajíes, tomates, cactáceas comestibles. Riego controlado esencial.',
+    ctaEyebrow:'Empieza hoy',
+    ctaTitle:'Tu jardín<br>empieza <em>aquí.</em>',
+    ctaSub:'Verdésia es gratuito, sin registros, sin complicaciones. Entra, añade tu primera planta, y empieza a cultivar con más conciencia.',
+    ctaBtn1Txt:'Entrar a mi jardín', ctaBtn2Txt:'Explorar plantas →',
+    ctaNote:'Sin registro · Sin pago · Solo jardinería',
+    ftTagline:'Compañero de jardín para Chile. Cultiva con consciencia, saison tras saison.',
+    ftCol1:'Producto', ftCol2:'Aprender', ftCol3:'Chile',
+    ftl1:'Hoy en mi jardín', ftl2:'Mi jardín', ftl3:'Fichas de plantas',
+    ftl4:'Calendario de siembras', ftl5:'Recolectar semillas', ftl6:'Plantas compañeras',
+    ftl7:'Zona Central · Csb', ftl8:'Sur Húmedo · Cfb', ftl9:'Norte Semiárido',
+    ftRights:'Todos los derechos reservados',
+    tv1:'Hoy',
+  },
+  fr: {
+    navCta:'Accéder à mon jardin',
+    /* nav links migrated to nav.* in i18n.js — handled by navMap in applyLang */
+    heroEyebrow:'Jardin · Santiago · Chili',
+    heroTitle:'Savoir quoi<br>planter <em>aujourd\'hui.</em>',
+    heroDesc:'Verdésia est un compagnon de jardin pour le Chili. Il te dit quoi semer cette semaine, suit la croissance de tes plantes, et préserve le savoir de tes semences, saison après saison.',
+    heroCta1:'Accéder à mon jardin', heroCta2:'Explorer les plantes',
+    tl1:'Ce que ton jardin a besoin maintenant', tl2:'Calendrier pour l\'hémisphère Sud', tl3:'Semences, culture, mémoire',
+    fc1tag:'🌸 Printemps · Santiago', fc1now:'Cette semaine',
+    fc1name:'Tomate', fc1stage:'Croissance végétative · J.38',
+    fc1action:'<strong>Maintenant :</strong> Tuteurer et éboutonner les gourmands. Arroser au pied.',
+    fc1s1:'Germination', fc1s2:'Récolte',
+    fc2name:'Fraise', fc2stage:'Floraison · J.72',
+    fc2action:'<strong>Cette semaine :</strong> Pollinisation en cours. Mettre la paille sous les fruits.',
+    fc2s1:'Installation', fc2s2:'Récolte',
+    fc3tag:'📝 Observation', fc3name:'Basilic',
+    fc3note:'«Fleurs apparaissent, pincer aujourd\'hui avant qu\'elles s\'ouvrent. Arôme intense.»',
+    pillarsEyebrow:'Comment ça marche',
+    pillarsTitle:'Trois choses simples,<br>bien <em>faites.</em>',
+    p1title:'Quoi faire aujourd\'hui', p1desc:'Verdésia connaît la saison au Chili, ta zone, et l\'état de chaque plante. Chaque matin il te dit exactement ce que ton jardin a besoin cette semaine.', p1link:'Voir aujourd\'hui →',
+    p2title:'Connaître tes plantes', p2desc:'Fiches botaniques complètes : quand semer, étapes de croissance, associations, nutrition, comment collecter les semences. Infos utiles, pas génériques.', p2link:'Voir les fiches →',
+    p3title:'Se souvenir de son jardin', p3desc:'Note ce que tu observes, suis la progression de chaque plante, conserve la mémoire de tes cultures saison après saison. Ton jardin, documenté.', p3link:'Mon jardin →',
+    mockDate:'Mardi, Sep 2025 · Santiago, Chili',
+    mockTitle:'Bonjour —<br><em>c\'est le printemps</em>',
+    mc1name:'Tomate', mc1stage:'Croissance · J.38',
+    mc1action:'Tuteurer et éboutonner les gourmands. Arroser au pied, jamais sur le feuillage.',
+    mc2name:'Basilic', mc2stage:'Croissance · J.22',
+    mc2action:'Pincer les sommets avant la floraison. Couper les fleurs pour prolonger la production.',
+    msbName:'Printemps austral', msbSub:'Sep · Oct · Nov · Santiago',
+    todayEyebrow:'Page d\'accueil',
+    todayTitle:'Ton jardin,<br>chaque <em>matin.</em>',
+    todayBody:'Ouvre Verdésia et en 30 secondes tu sais ce qui se passe dans ton jardin cette semaine. Pas de notifications. Pas de bruit. Juste ce qui compte.',
+    tf1t:'Saison en temps réel', tf1d:'Le calendrier de l\'hémisphère Sud, toujours juste pour Santiago.',
+    tf2t:'État de chaque plante', tf2d:'Quelle étape, combien de jours, et quoi faire exactement cette semaine.',
+    tf3t:'Quoi semer maintenant', tf3d:'Les plantes indiquées pour ta zone et ta saison, mises à jour automatiquement.',
+    plantsEyebrow:'Fiches de plantes',
+    plantsTitle:'Savoir botanique<br>pour de <em>vrais jardiniers.</em>',
+    plantsBody:'Chaque fiche contient tout ce que tu dois savoir sur une plante — du semis à la collecte des semences. Informations spécifiques au Chili, pas génériques.',
+    pil1t:'Quand planter au Chili', pil1d:'Calendriers pour l\'hémisphère Sud, avec les zones climatiques — de Santiago à Valdivia.',
+    pil2t:'Étapes de croissance', pil2d:'De la germination à la récolte, avec quoi faire à chaque étape.',
+    pil3t:'Plantes compagnes', pil3d:'Quoi planter ensemble, quoi éviter, et pourquoi — expliqué simplement.',
+    pil4t:'Nutrition', pil4d:'Les vrais bénéfices de ce que tu cultives — vitamines, minéraux, usages médicinaux.',
+    pil5t:'Collecte des semences', pil5d:'Guide pas à pas pour garder, sécher et conserver les semences de chaque plante.',
+    plantsBtn:'📖 ', plantsBtnTxt:'Voir la fiche tomate →',
+    pcpName:'Tomate', pcpSow:'Semis Aoû–Oct', pcpHarv:'Récolte Déc–Mars', pcpCalLabel:'Calendrier · Hémisphère Sud', pcpLink:'Voir la fiche complète →',
+    seedsEyebrow:'Patrimoine semencier',
+    seedsTitle:'Garder des semences,<br>c\'est <em>transmettre.</em>',
+    seedsBody:'Chaque semence conservée est un geste de continuité. Au Chili, des milliers de variétés locales — tomate limache, zapallo panare, ají cacho de cabra — survivent grâce aux jardiniers qui les préservent.',
+    seedsLink:'Voir le guide de collecte →',
+    ss1t:'Choisir le plus beau fruit', ss1d:'Du plant le plus vigoureux, laisser légèrement sur-mûrir jusqu\'à ce qu\'il cède sous les doigts.',
+    ss2t:'Fermentation 2–4 jours', ss2d:'Pulpe et graines dans l\'eau à 22°C. Remuer chaque jour. Élimine le gel inhibiteur de germination.',
+    ss3t:'Rincer et trier', ss3d:'Les graines viables coulent. Éliminer celles qui flottent — elles ne germeront pas.',
+    ss4t:'Sécher 10–14 jours', ss4d:'Sur assiette en céramique, à l\'abri, à moins de 35°C. Jamais en plein soleil.',
+    ss5t:'Stocker et étiqueter', ss5d:'Enveloppe kraft + bocal hermétique + silica gel. Variété, date, zone. Durée : 4–6 ans.',
+    chileEyebrow:'Fait pour le Chili',
+    chileTitle:'Ton climat, ta saison,<br>ton <em>vrai jardin.</em>',
+    cc1title:'Santiago et alentours', cc1desc:'Climat méditerranéen avec étés secs et chauds. Idéal pour tomates, courges, poivrons et fraises. Printemps doux, sans gelées fortes dès octobre.',
+    cc2title:'Valdivia, Los Lagos', cc2desc:'Pluies abondantes, hivers plus froids. Saisons courtes mais productives. Herbes, laitues et fruits forestiers s\'y adaptent naturellement.',
+    cc3title:'Coquimbo, Atacama', cc3desc:'Peu de pluies, chaleur intense. Cultures adaptées à la sécheresse : piments, tomates, cactacées comestibles. Irrigation contrôlée essentielle.',
+    ctaEyebrow:'Commence aujourd\'hui',
+    ctaTitle:'Ton jardin<br>commence <em>ici.</em>',
+    ctaSub:'Verdésia est gratuit, sans inscription, sans complications. Entre, ajoute ta première plante, et commence à cultiver avec plus de conscience.',
+    ctaBtn1Txt:'Accéder à mon jardin', ctaBtn2Txt:'Explorer les plantes →',
+    ctaNote:'Sans inscription · Sans paiement · Juste du jardinage',
+    ftTagline:'Compagnon de jardin pour le Chili. Cultive avec conscience, saison après saison.',
+    ftCol1:'Produit', ftCol2:'Apprendre', ftCol3:'Chili',
+    ftl1:'Aujourd\'hui dans mon jardin', ftl2:'Mon jardin', ftl3:'Fiches de plantes',
+    ftl4:'Calendrier de semis', ftl5:'Collecter ses semences', ftl6:'Plantes compagnes',
+    ftl7:'Zone Centrale · Csb', ftl8:'Sud Humide · Cfb', ftl9:'Nord Semi-aride',
+    ftRights:'Tous droits réservés',
+    tv1:'Aujourd\'hui',
+  }
+};
+
+/* Traducciones desde i18n.js (namespace `landing`). T se mantiene en este archivo
+   solo como tabla de claves esperadas para iterar — el contenido viene de SEMENCA_I18N. */
+const I18n = window.SemencaI18n;
+function t(k) { return I18n.t('landing.' + k); }
+// Sincronizar `lang` local con SemencaI18n
+lang = I18n.getLang();
+
+function applyLang() {
+  lang = I18n.getLang();
+
+  // ─── Nav: claves estables desde nav.* (mismo árbol que el resto de la app)
+  const navMap = {
+    navHome:   'nav.home',
+    navToday:  'nav.today',
+    navGarden: 'nav.garden',
+    navPlants: 'nav.plants',
+  };
+  Object.entries(navMap).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = I18n.t(key);
+  });
+
+  // ─── Contenido de la landing: claves de landing.* — solo iteramos las que
+  // realmente existen en i18n.js (evita mostrar "LANDING.NC1" si una clave falta).
+  const htmlKeys = ['heroTitle','pillarsTitle','mockTitle','todayTitle','plantsTitle','seedsTitle','chileTitle','ctaTitle','fc1action','fc2action'];
+  const landingTree = (window.SEMENCA_I18N[lang] && window.SEMENCA_I18N[lang].landing) || {};
+  const landingKeys = Object.keys(landingTree);
+
+  landingKeys.forEach(id => {
+    if (htmlKeys.includes(id)) return;
+    const el = document.getElementById(id);
+    if (el) el.textContent = t(id);
+  });
+  htmlKeys.forEach(id => {
+    if (!(id in landingTree)) return;
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = t(id);
+  });
+
+  // ─── Hero badge (estación)
+  const sn = lang === 'fr' ? SEASON_FR[season] : SEASON_ES[season];
+  const badgeEl = document.getElementById('heroBadge');
+  if (badgeEl) badgeEl.textContent = sn;
+
+  // ─── Botones de idioma
+  document.querySelectorAll('.lb').forEach(b => b.classList.toggle('on', b.textContent === lang.toUpperCase()));
+  document.documentElement.lang = lang;
+}
+
+function setLang(l) {
+  I18n.setLang(l); // persiste + notifica
+  applyLang();     // local re-render inmediato
+}
+I18n.onChange(() => applyLang());
+
+/* Nav scroll */
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
+}, { passive: true });
+
+/* Reveal on scroll (degrada con elegancia si IntersectionObserver falta) */
+if (!('IntersectionObserver' in window)) {
+  document.querySelectorAll('.fade-up, .reveal, .stage')
+    .forEach(el => el.classList.add('visible'));
+} else {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.07 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+}
+
+/* Init */
+applyLang();
+</script>
+<script>
+/* PWA: register service worker (silent, defensive) */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

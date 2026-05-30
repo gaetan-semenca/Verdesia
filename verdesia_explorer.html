@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#3B5838">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Verdésia">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180-apple.png">
+<title>Verdésia — Plantas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ═══════════════════════════════════════
+   TOKENS — mismos que el resto de Verdésia
+═══════════════════════════════════════ */
+:root {
+  --soil:    #2A1E12;
+  --bark:    #4A3626;
+  --bark-lt: #7A6248;
+  --moss:    #3B5838;
+  --moss-lt: #4D7050;
+  --sage:    #78A07C;
+  --sage-lt: #A9C8AD;
+  --straw:   #E6D7B0;
+  --cream:   #F4EFE5;
+  --parch:   #EDE6D8;
+  --rust:    #B55A28;
+  --sun:     #C8A03A;
+  --white:   #FDFAF2;
+
+  --font-d: 'Playfair Display', Georgia, serif;
+  --font-b: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-m: 'DM Mono', monospace;
+  --ease:   cubic-bezier(.16,1,.3,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--cream);
+  color: var(--soil);
+  font-family: var(--font-b);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Grano */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+  opacity: .55;
+}
+
+/* ═══════════════════════════════════════
+   NAV
+═══════════════════════════════════════ */
+.nav {
+  position: sticky; top: 0; z-index: 400;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 48px; height: 72px;
+  background: rgba(253,250,242,.93);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(42,30,18,.06);
+}
+.nav-logo {
+  font-family: var(--font-d); font-size: 22px;
+  color: var(--soil); text-decoration: none;
+  position: relative; line-height: 1.1;
+}
+.nav-logo em { color: var(--moss); font-style: italic; }
+/* Tagline editorial — assise sous le wordmark, lisible, sans bruit */
+.nav-logo::after {
+  content: 'Cultiva tu autonomía';
+  position: absolute; top: 100%; left: 0;
+  margin-top: 6px;
+  font-family: var(--font-d); font-size: 12.5px;
+  color: var(--moss-lt); font-style: italic;
+  font-weight: 400; letter-spacing: .15px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media (max-width: 380px) { .nav-logo::after { display: none; } }
+
+.nav-links {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 28px; align-items: center;
+}
+.nav-link {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  text-decoration: none; transition: color .18s;
+  padding-bottom: 2px; border-bottom: 1px solid transparent;
+}
+.nav-link.active { color: var(--soil); border-bottom-color: var(--moss); }
+.nav-link:hover  { color: var(--bark); }
+
+.nav-r { display: flex; align-items: center; gap: 14px; }
+.lang-sw { display: flex; border: 1px solid rgba(42,30,18,.11); border-radius: 100px; overflow: hidden; }
+.lb { padding: 4px 10px; border: none; background: transparent; font-family: var(--font-m); font-size: 9.5px; letter-spacing: .5px; color: var(--bark-lt); cursor: pointer; transition: background .15s, color .15s; }
+.lb.on { background: var(--moss); color: var(--white); }
+
+/* ═══════════════════════════════════════
+   HERO — small, calm, editorial
+═══════════════════════════════════════ */
+.hero {
+  padding: 64px 48px 36px;
+  background: var(--white);
+  border-bottom: 1px solid rgba(42,30,18,.07);
+}
+.hero-eyebrow {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.hero-eyebrow::before { content: ''; width: 18px; height: 1px; background: var(--sage); }
+.hero-title {
+  font-family: var(--font-d);
+  font-size: clamp(32px, 4.5vw, 52px);
+  line-height: 1.05; letter-spacing: -1.5px;
+  color: var(--soil); margin-bottom: 14px;
+}
+.hero-title em { color: var(--moss); font-style: italic; }
+.hero-sub {
+  font-size: 15px; color: var(--bark-lt); font-weight: 300;
+  max-width: 560px; line-height: 1.85;
+}
+.hero-count {
+  font-family: var(--font-m); font-size: 10px;
+  color: var(--sage-lt); letter-spacing: 1.5px;
+  margin-top: 20px;
+}
+
+/* ═══════════════════════════════════════
+   TOOLBAR — search + filters
+═══════════════════════════════════════ */
+.toolbar {
+  position: sticky; top: 72px; z-index: 300;
+  padding: 18px 48px;
+  background: rgba(244,239,229,.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(42,30,18,.07);
+  display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+}
+
+.search-box {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--white); border: 1px solid rgba(42,30,18,.1);
+  border-radius: 100px; padding: 9px 18px;
+  transition: border-color .18s, box-shadow .18s;
+  flex: 1 1 280px; max-width: 360px;
+}
+.search-box:focus-within { border-color: var(--sage); box-shadow: 0 0 0 3px rgba(120,160,124,.12); }
+.search-box .si { color: var(--sage-lt); font-size: 14px; flex-shrink: 0; }
+.search-box input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-family: var(--font-b); font-size: 14px; color: var(--soil);
+}
+.search-box input::placeholder { color: var(--sage-lt); font-weight: 300; }
+.search-box .clear {
+  border: none; background: transparent; color: var(--bark-lt);
+  font-size: 18px; cursor: pointer; line-height: 1;
+  /* Zone tappable agrandie sur mobile (32×32) sans changer la taille
+     visuelle du glyphe ×. */
+  padding: 8px 10px;
+  min-width: 32px; min-height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .15s;
+}
+.search-box.has-value .clear { opacity: .7; }
+.search-box.has-value .clear:hover { opacity: 1; color: var(--rust); }
+
+.filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter {
+  padding: 7px 14px; border-radius: 100px;
+  background: transparent; border: 1px solid rgba(42,30,18,.1);
+  font-family: var(--font-b); font-size: 12.5px; font-weight: 400;
+  color: var(--bark-lt); cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.filter:hover { border-color: var(--sage); color: var(--moss); }
+.filter.on { background: var(--moss); color: var(--white); border-color: var(--moss); }
+.filter-count {
+  font-family: var(--font-m); font-size: 9.5px;
+  opacity: .55; margin-left: 5px;
+  letter-spacing: 0;
+}
+.filter.on .filter-count { opacity: .85; }
+
+/* ═══════════════════════════════════════
+   GRID
+═══════════════════════════════════════ */
+.grid-wrap {
+  padding: 36px 48px 80px;
+  max-width: 1280px; margin: 0 auto;
+}
+
+.grid-result-count {
+  font-family: var(--font-m); font-size: 10px;
+  color: var(--sage); letter-spacing: 1.5px; text-transform: uppercase;
+  margin-bottom: 24px;
+  display: flex; align-items: center; gap: 10px;
+}
+.grid-result-count::after { content: ''; flex: 1; height: 1px; background: rgba(42,30,18,.07); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.card {
+  display: flex; flex-direction: column;
+  padding: 22px 22px 18px;
+  background: var(--white); border: 1px solid rgba(42,30,18,.07);
+  border-radius: 12px;
+  text-decoration: none; color: inherit;
+  position: relative;
+  transition: border-color .18s, transform .18s, box-shadow .18s;
+  min-height: 220px;
+}
+.card:hover {
+  border-color: var(--sage); transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(42,30,18,.08);
+}
+.card:hover .card-name { color: var(--moss); }
+
+.card-em {
+  font-size: 36px; line-height: 1; margin-bottom: 14px;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,.06));
+}
+.card-photo {
+  display: block;
+  width: 96px; height: 96px;
+  border-radius: 10px;
+  object-fit: cover;
+  margin-bottom: 14px;
+  background: var(--parch);
+}
+.card.has-photo .card-em { display: none; }
+.card-name {
+  font-family: var(--font-d); font-size: 21px;
+  color: var(--soil); line-height: 1.15;
+  letter-spacing: -.3px; margin-bottom: 4px;
+  transition: color .18s;
+}
+.card-latin {
+  font-family: var(--font-d); font-style: italic;
+  font-size: 12.5px; color: var(--sage);
+  margin-bottom: 14px;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-cat {
+  position: absolute; top: 18px; right: 16px;
+  font-family: var(--font-m); font-size: 9px;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 100px;
+  background: var(--cream); color: var(--sage);
+  border: 1px solid rgba(42,30,18,.07);
+}
+.card-cat.heritage {
+  background: rgba(200,160,58,.12); color: var(--sun);
+  border-color: rgba(200,160,58,.25);
+}
+
+/* ─── Verrouillage doux (free tier) ───
+   La carte reste visible — opacité réduite, image atténuée, badge
+   discret "Plus" en haut à gauche. Au clic : verdesia_plus.html. */
+.card--locked {
+  opacity: .55;
+  transition: opacity .18s;
+}
+.card--locked:hover { opacity: .80; }
+.card--locked .card-photo { filter: saturate(.4) contrast(.92); }
+.card-plus {
+  position: absolute; top: 18px; left: 16px;
+  font-family: var(--font-m); font-size: 9px;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 100px;
+  background: var(--moss); color: var(--white);
+  z-index: 2;
+}
+/* Línea footer discreta dentro de las cartas bloqueadas — explica la
+   relación con Verdésia Plus sin grito, sin botón. */
+.card-locked-foot {
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid rgba(59,88,56,.12);
+  font-family: var(--font-m); font-size: 9.5px;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--moss); text-align: center;
+}
+
+.card-rarity {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--sage-lt); letter-spacing: 1.4px; text-transform: uppercase;
+  margin: -8px 0 14px;
+}
+
+/* Pequeño indicador discreto: la planta se da bien en la región elegida.
+   Punto musgo en la esquina inferior-izquierda, sin texto, casi imperceptible. */
+.card-region-good {
+  position: absolute; bottom: 14px; left: 16px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--moss); opacity: .55;
+  pointer-events: none;
+}
+
+.card-meta {
+  margin-top: auto;
+  display: flex; flex-direction: column; gap: 6px;
+  padding-top: 14px; border-top: 1px solid rgba(42,30,18,.06);
+}
+.cm-row {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 12px;
+}
+.cm-label {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--sage-lt); letter-spacing: 1px; text-transform: uppercase;
+  width: 60px; flex-shrink: 0;
+}
+.cm-value { color: var(--bark); font-weight: 400; }
+.cm-value.empty { color: var(--sage-lt); font-weight: 300; }
+
+/* Empty state */
+.empty-state {
+  text-align: center; padding: 60px 24px;
+  background: var(--white); border: 1px dashed rgba(42,30,18,.12);
+  border-radius: 12px;
+}
+.es-em { font-size: 36px; opacity: .35; margin-bottom: 14px; }
+.es-title { font-family: var(--font-d); font-size: 20px; color: var(--bark-lt); margin-bottom: 6px; }
+.es-sub { font-size: 13.5px; color: var(--sage-lt); font-weight: 300; line-height: 1.7; }
+.es-reset {
+  margin-top: 20px; padding: 10px 22px; border-radius: 100px;
+  background: var(--moss); color: var(--white);
+  font-family: var(--font-b); font-size: 13px; font-weight: 500;
+  border: none; cursor: pointer;
+  transition: background .18s, transform .15s;
+}
+.es-reset:hover { background: var(--soil); transform: translateY(-1px); }
+
+/* ═══════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════ */
+.footer {
+  padding: 32px 48px;
+  border-top: 1px solid rgba(42,30,18,.07);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--white);
+  font-size: 12px; color: var(--sage-lt); gap: 20px; flex-wrap: wrap;
+}
+.footer-logo { font-family: var(--font-d); font-size: 16px; color: var(--bark-lt); font-style: italic; }
+.footer-links { display: flex; gap: 20px; }
+.footer-links a { color: var(--sage-lt); text-decoration: none; transition: color .18s; }
+.footer-links a:hover { color: var(--moss); }
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .nav { padding: 0 18px; }
+  .nav-links { display: none; }
+  .hero { padding: 40px 20px 28px; }
+  .toolbar { padding: 14px 18px; gap: 12px; }
+  .grid-wrap { padding: 28px 18px 60px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .card { padding: 18px 16px 14px; min-height: 200px; }
+  .card-em { font-size: 30px; }
+  .card-photo { width: 80px; height: 80px; }
+  .card-name { font-size: 18px; }
+  .card-latin { font-size: 11.5px; }
+  .cm-label { width: 50px; }
+  .footer { padding: 24px 18px; flex-direction: column; align-items: center; text-align: center; }
+  .filter { padding: 8px 14px; font-size: 13px; min-height: 36px; }
+  .search-box { padding: 10px 16px; min-height: 40px; }
+  .search-box input { font-size: 15px; }
+}
+@media (max-width: 480px) {
+  /* minmax(0, 1fr) — sans ce floor, le min-content des noms latins longs
+     (ex: "Solanum lycopersicum") fait grossir les colonnes au-delà du
+     viewport et crée un overflow horizontal de ~49px sur les écrans 360px. */
+  .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+</style>
+</head>
+<body>
+
+<!-- Shared modules -->
+<script src="plants.js"></script>
+<script src="storage.js"></script>
+<!-- Façade régionale : DOIT être chargée avant regions.js + i18n.js -->
+<script src="verdesia_region_config.js"></script>
+<script src="verdesia_plan.js"></script>
+<script src="regions.js"></script>
+<script src="i18n.js"></script>
+<script src="garden.js"></script>
+<script src="onboarding.js"></script>
+<script src="verdesia_profile.js" defer></script>
+
+<!-- ═══════════════════ NAV -->
+<nav class="nav">
+  <a href="verdesia_landing.html" class="nav-logo">Verd<em>ésia</em></a>
+  <div class="nav-links">
+    <a class="nav-link" href="verdesia_today.html" id="nlHoy">Hoy</a>
+    <a class="nav-link" href="verdesia_jardin.html" id="nlJardin">Mi jardín</a>
+    <a class="nav-link active" href="verdesia_explorer.html" id="nlPlantas">Plantas</a>
+    <a class="nav-link" href="verdesia_brote.html" id="nlDiag">Lectura del huerto</a>
+    <a class="nav-link" href="verdesia_observaciones.html" id="nlMemoria">Memoria</a>
+  </div>
+  <div class="nav-r">
+  </div>
+</nav>
+
+<!-- ═══════════════════ HERO -->
+<section class="hero">
+  <div class="hero-eyebrow" id="heroEyebrow">Catálogo</div>
+  <h1 class="hero-title" id="heroTitle">El catálogo del <em>huerto chileno</em></h1>
+  <p class="hero-sub" id="heroSub">
+    Hortalizas, hierbas, frutas y árboles que cultivar y conservar. Cada ficha contiene su calendario, sus etapas, sus problemas frecuentes y cómo recolectar sus semillas.
+  </p>
+  <div class="hero-count" id="heroCount">—</div>
+</section>
+
+<!-- ═══════════════════ TOOLBAR -->
+<div class="toolbar">
+  <div class="search-box" id="searchBox">
+    <span class="si">⌕</span>
+    <input type="text" id="searchInput" placeholder="Buscar — tomate, romero, frutilla…">
+    <button class="clear" id="searchClear" onclick="clearSearch()" aria-label="Limpiar búsqueda">×</button>
+  </div>
+  <div class="filters" id="filters">
+    <!-- rendered by JS -->
+  </div>
+</div>
+
+<!-- ═══════════════════ GRID -->
+<div class="grid-wrap">
+  <div class="grid-result-count" id="resultCount"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- ═══════════════════ FOOTER -->
+<footer class="footer">
+  <div class="footer-logo">Verdésia</div>
+  <div class="footer-links">
+    <a href="verdesia_today.html" id="ftHome">Hoy</a>
+    <a href="verdesia_jardin.html" id="ftJardin">Mi jardín</a>
+    <a href="verdesia_explorer.html" id="ftPlants">Plantas</a>
+    <a href="verdesia_brote.html" id="ftDiag">Lectura del huerto</a>
+    <a href="verdesia_observaciones.html" id="ftMemoria">Memoria</a>
+  </div>
+  <div style="font-family:var(--font-m);font-size:9px;color:var(--sage-lt);letter-spacing:1px">
+    CHILE · MVP 2025
+  </div>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   MÓDULOS COMPARTIDOS
+═══════════════════════════════════════════════════ */
+const Garden     = window.SemencaGarden;
+const Storage    = window.SemencaStorage;
+const I18n       = window.SemencaI18n;
+const CATALOGUE  = window.SEMENCA_PLANTS;
+const CATEGORIES = window.SEMENCA_CATEGORIES;
+
+/* ═══════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════ */
+let activeFilter = 'all'; // 'all' | 'hortaliza' | 'hierba' | 'flor' | 'arbol_fruta' | 'heritage'
+let query = '';
+
+/* Helper local: traducciones de esta página */
+function S(k, params) { return I18n.t('explorer.' + k, params); }
+function navT(k) { return I18n.t('nav.' + k); }
+
+/* ═══════════════════════════════════════════════════
+   FILTROS
+═══════════════════════════════════════════════════ */
+const FILTER_DEFS = [
+  { id:'all',          test: () => true },
+  { id:'hortaliza',    test: p => p.category === 'hortaliza' },
+  { id:'hierba',       test: p => p.category === 'hierba' },
+  { id:'flor',         test: p => p.category === 'flor' },
+  { id:'arbol_fruta',  test: p => p.category === 'arbol' || p.category === 'fruta' },
+  { id:'heritage',     test: p => !!p.heritage },
+];
+
+function renderFilters() {
+  // Mapeo id-filtro → clave i18n
+  const labelKeys = {
+    all:'filterAll', hortaliza:'filterHortaliza', hierba:'filterHierba',
+    flor:'filterFlor', arbol_fruta:'filterArbolFruta', heritage:'filterHeritage',
+  };
+  // Conteo de plantas que cumplen cada filtro (sin búsqueda)
+  const counts = {};
+  FILTER_DEFS.forEach(f => { counts[f.id] = CATALOGUE.filter(f.test).length; });
+
+  const wrap = document.getElementById('filters');
+  wrap.innerHTML = FILTER_DEFS.map(f =>
+    `<button class="filter${activeFilter===f.id?' on':''}" data-id="${f.id}">${S(labelKeys[f.id])}<span class="filter-count">${counts[f.id]}</span></button>`
+  ).join('');
+  wrap.querySelectorAll('.filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeFilter = btn.dataset.id;
+      renderFilters();
+      renderGrid();
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   GRID
+═══════════════════════════════════════════════════ */
+function categoryLabel(plant) {
+  const cats = I18n.t('common.categoryLabels');
+  return (cats && cats[plant.category]) || '';
+}
+
+const RARITY_LABELS = {
+  tradicional: 'Tradicional',
+  patrimonial: 'Patrimonial',
+  raro: 'Raro',
+};
+function rarityLabel(rarity) {
+  return RARITY_LABELS[rarity] || '';
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function renderGrid() {
+  const q = (query || '').toLowerCase().trim();
+  const filterDef = FILTER_DEFS.find(f => f.id === activeFilter) || FILTER_DEFS[0];
+
+  const filtered = CATALOGUE.filter(p => {
+    if (!filterDef.test(p)) return false;
+    if (!q) return true;
+    // Búsqueda multilingüe: combinar nombres ES + FR + latín + familia + id
+    const haystack = [
+      p.name?.es, p.name?.fr,
+      p.latin,
+      p.family?.es, p.family?.fr,
+      p.id
+    ].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(q);
+  });
+
+  const total = CATALOGUE.length;
+  const rc = document.getElementById('resultCount');
+  rc.textContent = (filtered.length === total)
+    ? S('resultAll', { n: total })
+    : S('resultSome', { n: filtered.length, total });
+
+  const grid = document.getElementById('grid');
+
+  if (!filtered.length) {
+    grid.style.display = 'none';
+    let empty = document.getElementById('emptyState');
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.id = 'emptyState';
+      empty.className = 'empty-state';
+      grid.parentElement.appendChild(empty);
+    }
+    const title = q
+      ? S('emptyTitleQuery', { q: escapeHtml(query) })
+      : S('emptyTitle');
+    const showReset = q || activeFilter !== 'all';
+    empty.innerHTML = `
+      <div class="es-em">🌿</div>
+      <div class="es-title">${title}</div>
+      <p class="es-sub">${S('emptySub')}</p>
+      ${showReset ? `<button class="es-reset" id="emptyReset">${S('emptyReset')}</button>` : ''}`;
+    empty.style.display = '';
+    const resetBtn = document.getElementById('emptyReset');
+    if (resetBtn) resetBtn.addEventListener('click', resetAll);
+    return;
+  }
+
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.style.display = 'none';
+  grid.style.display = '';
+
+  grid.innerHTML = filtered.map(p => {
+    const name  = I18n.getLocalized(p.name);
+    const latin = p.latin || '';
+    const sow   = I18n.getLocalized(p.sow) || '—';
+    const harv  = I18n.getLocalized(p.harv) || '—';
+    const cat   = p.heritage ? S('heritageLabel') : categoryLabel(p);
+    const catCls= p.heritage ? 'heritage' : '';
+    const rarity = rarityLabel(p.rarity);
+    const suitability = (window.SemencaRegions && SemencaRegions.plantSuitability(p)) || null;
+    const regionDotHtml = suitability === 'good'
+      ? `<span class="card-region-good" title="Se da bien en ${SemencaRegions.getCurrentZoneDisplay()}"></span>`
+      : '';
+    const photoHtml = p.photo
+      ? `<img class="card-photo" src="${p.photo}" alt="" loading="lazy" decoding="async" onerror="this.closest('.card').classList.remove('has-photo');this.remove();">`
+      : '';
+    // Verrouillage doux pour les utilisateurs free hors du sous-ensemble curé.
+    // La carte reste visible mais devient un lien vers Verdésia Plus, avec
+    // un badge discret. Pas de pop-up, pas de masquage agressif.
+    const unlocked = !window.VerdesiaPlan || window.VerdesiaPlan.isPlantUnlocked(p);
+    const lockedCls = unlocked ? '' : ' card--locked';
+    const lockedBadge = unlocked ? '' : `<span class="card-plus" aria-label="Verdésia Plus" title="Verdésia Plus">Plus</span>`;
+    const lockedFoot  = unlocked ? '' : `<div class="card-locked-foot">Acceso completo con Verdésia Plus</div>`;
+    const href = unlocked ? `verdesia_plante.html?id=${p.id}` : 'verdesia_plus.html';
+    return `
+      <a class="card${p.photo ? ' has-photo' : ''}${lockedCls}" href="${href}">
+        <span class="card-cat ${catCls}">${cat}</span>
+        ${regionDotHtml}
+        ${lockedBadge}
+        ${photoHtml}
+        <div class="card-em">${p.emoji}</div>
+        <div class="card-name">${name}</div>
+        <div class="card-latin">${latin}</div>
+        ${rarity ? `<div class="card-rarity">${rarity}</div>` : ''}
+        <div class="card-meta">
+          <div class="cm-row">
+            <span class="cm-label">${S('sowingLabel')}</span>
+            <span class="cm-value${sow==='—'?' empty':''}">${sow}</span>
+          </div>
+          <div class="cm-row">
+            <span class="cm-label">${S('harvestLabel')}</span>
+            <span class="cm-value${harv==='—'?' empty':''}">${harv}</span>
+          </div>
+        </div>
+        ${lockedFoot}
+      </a>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════
+   SEARCH
+═══════════════════════════════════════════════════ */
+function setupSearch() {
+  const box   = document.getElementById('searchBox');
+  const input = document.getElementById('searchInput');
+  input.placeholder = S('searchPh');
+  input.value = query;
+  box.classList.toggle('has-value', !!query);
+  input.addEventListener('input', () => {
+    query = input.value;
+    box.classList.toggle('has-value', !!query);
+    renderGrid();
+  });
+}
+function clearSearch() {
+  query = '';
+  const input = document.getElementById('searchInput');
+  input.value = '';
+  document.getElementById('searchBox').classList.remove('has-value');
+  input.focus();
+  renderGrid();
+}
+
+// Reset desde el empty state: limpia búsqueda + filtro
+function resetAll() {
+  query = '';
+  activeFilter = 'all';
+  const input = document.getElementById('searchInput');
+  if (input) {
+    input.value = '';
+    document.getElementById('searchBox').classList.remove('has-value');
+  }
+  renderFilters();
+  renderGrid();
+}
+
+/* ═══════════════════════════════════════════════════
+   IDIOMA
+═══════════════════════════════════════════════════ */
+function applyLang() {
+  const lang = I18n.getLang();
+  document.getElementById('heroEyebrow').textContent = S('heroEyebrow');
+  document.getElementById('heroTitle').innerHTML   = S('heroTitle');
+  document.getElementById('heroSub').textContent   = S('heroSub');
+  document.getElementById('heroCount').textContent = S('heroCount', { n: CATALOGUE.length });
+  document.getElementById('nlHoy').textContent     = navT('today');
+  document.getElementById('nlJardin').textContent  = navT('garden');
+  document.getElementById('nlPlantas').textContent = navT('plants');
+  document.getElementById('ftHome').textContent    = navT('today');
+  document.getElementById('ftJardin').textContent  = navT('garden');
+  document.getElementById('ftPlants').textContent  = navT('plants');
+  document.getElementById('searchInput').placeholder = S('searchPh');
+  document.querySelectorAll('.lb').forEach(b =>
+    b.classList.toggle('on', b.textContent === lang.toUpperCase()));
+  I18n.applyTranslations(); // por si hay data-i18n
+  renderFilters();
+  renderGrid();
+}
+function setLang(l) {
+  I18n.setLang(l); // dispara onChange → re-render automático
+}
+
+/* ═══════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════ */
+// Re-render cuando otra página cambia el idioma
+I18n.onChange(applyLang);
+// Re-render cuando el usuario cambia de región (afecta el punto musgo "se da bien aquí")
+window.addEventListener('semenca:zonechange', () => renderGrid());
+// Re-render cuando el jardín se modifica (cards reflejan estado)
+window.addEventListener('semenca:gardenchange', () => renderGrid());
+
+// URL params: deep-link a un filtro o búsqueda
+const params = new URLSearchParams(window.location.search);
+const fParam = params.get('filter');
+if (fParam && FILTER_DEFS.find(f => f.id === fParam)) activeFilter = fParam;
+const qParam = params.get('q');
+if (qParam) query = qParam;
+
+setupSearch();
+applyLang();
+
+// Onboarding de primer uso (idioma + región)
+SemencaOnboarding.bootstrap();
+</script>
+<script>
+/* PWA: register service worker (silent, defensive) */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,2420 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#3B5838">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Verdésia">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180-apple.png">
+<title>Verdésia — Catálogo de plantas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ═══════════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════════ */
+:root {
+  --soil:    #2A1E12;
+  --bark:    #4A3626;
+  --bark-lt: #7A6248;
+  --moss:    #3B5838;
+  --moss-lt: #4D7050;
+  --sage:    #78A07C;
+  --sage-lt: #A9C8AD;
+  --straw:   #E6D7B0;
+  --cream:   #F4EFE5;
+  --parchment: #EDE6D8;
+  --rust:    #B55A28;
+  --rust-lt: #D07848;
+  --sun:     #C8A03A;
+  --white:   #FDFAF2;
+  --ink:     #1E1610;
+
+  --font-d: 'Playfair Display', 'Georgia', serif;
+  --font-b: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-m: 'DM Mono', monospace;
+
+  --ease-out: cubic-bezier(.16,1,.3,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+
+body {
+  background: var(--white);
+  color: var(--soil);
+  font-family: var(--font-b);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Grain texture overlay */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 1000;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.028'/%3E%3C/svg%3E");
+  opacity: .6;
+}
+
+/* ═══════════════════════════════════════════════
+   NAV — thin, editorial
+═══════════════════════════════════════════════ */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 48px;
+  height: 72px;
+  background: rgba(253,250,242,.92);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid rgba(44,30,18,.07);
+}
+
+.nav-logo {
+  font-family: var(--font-d); font-size: 22px;
+  color: var(--soil); text-decoration: none;
+  position: relative; line-height: 1.1;
+  letter-spacing: -.3px;
+}
+.nav-logo em { color: var(--moss); font-style: italic; }
+/* Tagline editorial — assise sous le wordmark, lisible, sans bruit */
+.nav-logo::after {
+  content: 'Cultiva tu autonomía';
+  position: absolute; top: 100%; left: 0;
+  margin-top: 6px;
+  font-family: var(--font-d); font-size: 12.5px;
+  color: var(--moss-lt); font-style: italic;
+  font-weight: 400; letter-spacing: .15px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media (max-width: 380px) { .nav-logo::after { display: none; } }
+
+.nav-breadcrumb {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 1.5px; text-transform: uppercase;
+}
+.nav-breadcrumb a { color: inherit; text-decoration: none; }
+.nav-breadcrumb a:hover { color: var(--bark-lt); }
+.nav-bc-sep { opacity: .4; }
+
+/* ── Standard global nav (3 links + active state) ── */
+.nav-links {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 28px; align-items: center;
+}
+.nav-link {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  text-decoration: none; transition: color .18s;
+  padding-bottom: 2px; border-bottom: 1px solid transparent;
+}
+.nav-link.active { color: var(--soil); border-bottom-color: var(--moss); }
+.nav-link:hover  { color: var(--bark); }
+
+/* ── In-hero back link — always visible (mobile included) ── */
+.hero-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-m); font-size: 10px;
+  color: var(--sage); text-decoration: none;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  margin-bottom: 24px;
+  transition: color .18s, gap .18s;
+}
+.hero-back:hover { color: var(--moss); gap: 10px; }
+.hero-back .hb-arrow { font-size: 13px; line-height: 1; }
+
+.nav-right {
+  display: flex; align-items: center; gap: 16px;
+}
+.nav-action {
+  font-family: var(--font-b); font-size: 12.5px; font-weight: 500;
+  color: var(--bark-lt); background: none; border: none;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  padding: 6px 0; transition: color .18s;
+}
+.nav-action:hover { color: var(--moss); }
+.nav-action-icon { font-size: 14px; }
+
+.lang-sw {
+  display: flex;
+  border: 1px solid rgba(44,30,18,.12); border-radius: 100px; overflow: hidden;
+}
+.lb {
+  padding: 4px 10px; border: none; background: transparent;
+  font-family: var(--font-m); font-size: 9.5px; letter-spacing: .5px;
+  color: var(--bark-lt); cursor: pointer; transition: background .15s, color .15s;
+}
+.lb.on { background: var(--moss); color: var(--white); }
+
+/* ═══════════════════════════════════════════════
+   HERO — editorial full-bleed header
+═══════════════════════════════════════════════ */
+.hero {
+  min-height: 92vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding-top: 72px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Left — text column */
+.hero-left {
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 72px 64px 64px 72px;
+  position: relative; z-index: 2;
+}
+
+.hero-season-strip {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 44px;
+}
+.season-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--sun); flex-shrink: 0;
+  animation: pulse-dot 3s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .5; transform: scale(.75); }
+}
+.season-text {
+  font-family: var(--font-m); font-size: 10px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+}
+.season-badge {
+  font-family: var(--font-m); font-size: 9px;
+  background: rgba(200,160,58,.12); color: var(--sun);
+  border: 1px solid rgba(200,160,58,.25);
+  padding: 2px 9px; border-radius: 100px; letter-spacing: .5px;
+}
+
+.hero-name {
+  font-family: var(--font-d);
+  font-size: clamp(52px, 6.5vw, 88px);
+  line-height: .95;
+  letter-spacing: -3px;
+  color: var(--soil);
+  margin-bottom: 14px;
+  font-weight: 700;
+}
+.hero-name em {
+  font-style: italic; font-weight: 400; color: var(--moss);
+  display: block; font-size: .7em; letter-spacing: -1px; margin-top: 4px;
+}
+
+.hero-latin {
+  font-family: var(--font-d); font-style: italic;
+  font-size: 16px; color: var(--sage);
+  margin-bottom: 32px; letter-spacing: .3px;
+}
+
+.hero-rarity {
+  font-family: var(--font-m); font-size: 10px;
+  color: var(--sage-lt); letter-spacing: 2px; text-transform: uppercase;
+  margin-top: -26px; margin-bottom: 32px;
+}
+.hero-rarity:empty { display: none; }
+
+.hero-desc {
+  font-size: 15px; color: var(--bark-lt);
+  font-weight: 300; line-height: 1.85;
+  max-width: 420px; margin-bottom: 48px;
+}
+
+/* Quick vitals row */
+.hero-vitals {
+  display: flex; gap: 0;
+  border-top: 1px solid rgba(44,30,18,.09);
+  padding-top: 32px;
+}
+.vital {
+  flex: 1; padding-right: 24px;
+  border-right: 1px solid rgba(44,30,18,.07);
+  margin-right: 24px;
+}
+.vital:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+.vital-label {
+  font-family: var(--font-m); font-size: 8.5px;
+  color: var(--sage-lt); letter-spacing: 1.5px; text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.vital-value {
+  font-family: var(--font-d); font-size: 19px;
+  color: var(--soil); line-height: 1.1;
+  margin-bottom: 3px;
+}
+.vital-sub {
+  font-size: 11px; color: var(--bark-lt); font-weight: 300;
+}
+
+/* Right — botanical illustration */
+.hero-right {
+  background: var(--moss);
+  position: relative; overflow: hidden;
+}
+.hero-right.has-photo {
+  background-color: var(--moss);
+  background-image:
+    linear-gradient(180deg, rgba(59,88,56,.55), rgba(42,30,18,.7)),
+    var(--plant-photo);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
+/* Decorative botanical rings */
+.hero-right-inner {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.botanical-svg {
+  width: 100%; height: 100%;
+  position: absolute; inset: 0;
+}
+
+/* Large centered emoji / illustration */
+.plant-hero-em {
+  font-size: clamp(120px, 18vw, 200px);
+  line-height: 1;
+  position: relative; z-index: 2;
+  filter: drop-shadow(0 24px 48px rgba(0,0,0,.3));
+  animation: float-plant 8s ease-in-out infinite;
+  user-select: none;
+}
+@keyframes float-plant {
+  0%,100% { transform: translateY(0px) rotate(-1deg); }
+  50%      { transform: translateY(-14px) rotate(1deg); }
+}
+
+/* Side data strip on right panel */
+.hero-data-strip {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 3;
+  display: flex; gap: 0;
+  background: rgba(0,0,0,.2);
+  backdrop-filter: blur(8px);
+}
+.hds-item {
+  flex: 1; padding: 14px 20px;
+  border-right: 1px solid rgba(255,255,255,.1);
+  text-align: center;
+}
+.hds-item:last-child { border-right: none; }
+.hds-val {
+  font-family: var(--font-d); font-size: 20px;
+  color: var(--white); line-height: 1; margin-bottom: 3px;
+}
+.hds-label {
+  font-family: var(--font-m); font-size: 8.5px;
+  color: rgba(255,255,255,.5); letter-spacing: 1px; text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════════
+   SCROLL INDICATOR
+═══════════════════════════════════════════════ */
+.scroll-cue {
+  position: absolute; bottom: 32px; left: 72px; z-index: 10;
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage-lt); letter-spacing: 1.5px; text-transform: uppercase;
+  animation: fade-cue 2s 2s ease both;
+}
+@keyframes fade-cue { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.scroll-line {
+  width: 28px; height: 1px; background: var(--sage-lt);
+  position: relative; overflow: hidden;
+}
+.scroll-line::after {
+  content: ''; position: absolute; inset: 0;
+  background: var(--moss);
+  animation: scroll-run 2s 2.5s ease-in-out infinite;
+  transform: translateX(-100%);
+}
+@keyframes scroll-run { to { transform: translateX(100%); } }
+
+/* ═══════════════════════════════════════════════
+   SEASON CALENDAR — full width, editorial
+═══════════════════════════════════════════════ */
+.season-section {
+  padding: 88px 72px;
+  background: var(--cream);
+  border-top: 1px solid rgba(44,30,18,.07);
+}
+
+.section-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 52px;
+  gap: 32px;
+}
+.section-eyebrow {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--sage); letter-spacing: 2.5px; text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-eyebrow::before { content: ''; width: 18px; height: 1px; background: var(--sage); }
+.section-title {
+  font-family: var(--font-d); font-size: clamp(26px, 3.5vw, 40px);
+  color: var(--soil); line-height: 1.15; letter-spacing: -.5px;
+}
+.section-title em { color: var(--moss); font-style: italic; }
+
+/* Hemi toggle */
+.hemi-toggle {
+  display: flex; flex-shrink: 0;
+  border: 1px solid rgba(44,30,18,.1); border-radius: 8px; overflow: hidden;
+}
+.hemi-btn {
+  padding: 9px 18px; font-size: 12.5px; font-weight: 500;
+  background: none; border: none; cursor: pointer;
+  color: var(--bark-lt); font-family: var(--font-b); transition: all .15s;
+  white-space: nowrap;
+}
+.hemi-btn.on { background: var(--moss); color: var(--white); }
+
+/* Monthly calendar — large, visual */
+.cal-months-label {
+  display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px;
+  margin-bottom: 8px;
+}
+.cml {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--sage-lt); text-align: center; letter-spacing: .3px;
+  padding: 4px 0;
+}
+
+.cal-track {
+  display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px;
+  margin-bottom: 6px;
+}
+.cal-row-label {
+  font-family: var(--font-m); font-size: 8.5px;
+  color: var(--sage); letter-spacing: 1px; text-transform: uppercase;
+  margin-bottom: 5px; margin-top: 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.cal-row-label::before {
+  content: ''; width: 10px; height: 1px; background: var(--sage);
+}
+
+.cal-bar {
+  height: 36px; border-radius: 4px;
+  background: rgba(44,30,18,.05);
+  transition: transform .15s, opacity .15s;
+  cursor: default; position: relative;
+}
+.cal-bar:hover { transform: scaleY(1.1); }
+.cal-bar.active-sow    { background: rgba(200,160,58,.45); }
+.cal-bar.active-plant  { background: rgba(59,88,56,.55); }
+.cal-bar.active-harv   { background: rgba(181,90,40,.55); }
+.cal-bar.active-seeds  { background: rgba(42,30,18,.25); }
+
+/* Month highlight — current month */
+.cal-bar.current-month::after {
+  content: ''; position: absolute; top: -4px; left: 50%;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--rust); transform: translateX(-50%);
+}
+
+.cal-legend {
+  display: flex; gap: 24px; margin-top: 20px; flex-wrap: wrap;
+}
+.cl-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--bark-lt); }
+.cl-swatch { width: 24px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* Current season callout */
+.cal-callout {
+  margin-top: 36px; padding: 24px 28px;
+  background: var(--white);
+  border: 1px solid rgba(44,30,18,.08);
+  border-radius: 12px;
+  display: flex; align-items: flex-start; gap: 20px;
+}
+.cc-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+.cc-title {
+  font-family: var(--font-d); font-size: 17px;
+  color: var(--soil); margin-bottom: 6px; line-height: 1.3;
+}
+.cc-text {
+  font-size: 13.5px; color: var(--bark-lt);
+  font-weight: 300; line-height: 1.8;
+}
+.cc-text strong { color: var(--bark); font-weight: 500; }
+
+/* ═══════════════════════════════════════════════
+   GROWTH STAGES — the real heart of the page
+═══════════════════════════════════════════════ */
+.stages-section {
+  padding: 88px 72px;
+  background: var(--white);
+}
+
+.stages-timeline {
+  position: relative;
+  padding-left: 0;
+  margin-top: 52px;
+}
+
+/* Connecting line */
+.stages-timeline::before {
+  content: ''; position: absolute;
+  left: 36px; top: 44px; bottom: 44px;
+  width: 1px;
+  background: linear-gradient(180deg, var(--straw), var(--sage-lt), var(--rust-lt));
+}
+
+.stage {
+  display: grid; grid-template-columns: 72px 1fr;
+  gap: 0 36px;
+  padding-bottom: 56px; position: relative;
+  opacity: 0; transform: translateY(20px);
+  transition: opacity .6s var(--ease-out), transform .6s var(--ease-out);
+}
+.stage.visible { opacity: 1; transform: translateY(0); }
+.stage:last-child { padding-bottom: 0; }
+
+/* Stage number / icon column */
+.stage-num-col {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+}
+.stage-circle {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0; position: relative; z-index: 2;
+  border: 2px solid var(--white);
+  box-shadow: 0 0 0 1px rgba(44,30,18,.1);
+}
+
+/* Stage body */
+.stage-body {}
+.stage-meta {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px; padding-top: 10px;
+}
+.stage-name {
+  font-family: var(--font-d); font-size: 22px;
+  color: var(--soil); line-height: 1; font-weight: 600;
+}
+.stage-timing {
+  font-family: var(--font-m); font-size: 10px;
+  background: var(--cream); color: var(--sage);
+  padding: 3px 10px; border-radius: 100px; letter-spacing: .3px;
+  white-space: nowrap;
+}
+.stage-desc {
+  font-size: 14px; color: var(--bark-lt);
+  font-weight: 300; line-height: 1.85; margin-bottom: 16px;
+  max-width: 600px;
+}
+.stage-tips {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.stage-tip {
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: 13px; color: var(--bark-lt); font-weight: 300; line-height: 1.65;
+}
+.tip-arrow { color: var(--sage); flex-shrink: 0; font-size: 11px; margin-top: 2px; }
+
+/* ═══════════════════════════════════════════════
+   COMPANION PLANTS — organic layout
+═══════════════════════════════════════════════ */
+.companions-section {
+  padding: 88px 72px;
+  background: var(--parchment);
+}
+
+.companions-grid {
+  margin-top: 52px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 48px;
+}
+
+.companion-group-title {
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.companion-list { display: flex; flex-direction: column; gap: 0; }
+.companion-item {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(44,30,18,.07);
+  transition: background .15s;
+}
+.companion-item:last-child { border-bottom: none; }
+.companion-item:hover { background: transparent; }
+
+.ci-em {
+  width: 44px; height: 44px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  background: var(--white); border-radius: 8px;
+  border: 1px solid rgba(44,30,18,.07);
+}
+.ci-info { flex: 1; min-width: 0; }
+.ci-name { font-size: 14px; font-weight: 500; color: var(--soil); margin-bottom: 4px; }
+.ci-why  { font-size: 12.5px; color: var(--bark-lt); font-weight: 300; line-height: 1.65; }
+.ci-badge {
+  font-family: var(--font-m); font-size: 9px;
+  padding: 2px 8px; border-radius: 100px;
+  flex-shrink: 0; margin-top: 2px;
+  white-space: nowrap;
+}
+.ci-badge.good { background: rgba(59,88,56,.1); color: var(--moss); }
+.ci-badge.bad  { background: rgba(181,90,40,.1); color: var(--rust); }
+
+/* ═══════════════════════════════════════════════
+   NUTRITION — large and calm
+═══════════════════════════════════════════════ */
+.nutrition-section {
+  padding: 88px 72px;
+  background: var(--white);
+}
+
+.nutrition-layout {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 72px; margin-top: 52px; align-items: start;
+}
+
+/* Macros — oversized display numbers */
+.macros-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 0; margin-bottom: 40px;
+}
+.macro {
+  padding: 24px 20px 24px 0;
+  border-right: 1px solid rgba(44,30,18,.07);
+  margin-right: 20px;
+}
+.macro:last-child { border-right: none; margin-right: 0; }
+.macro-num {
+  font-family: var(--font-d); font-size: 38px;
+  color: var(--soil); line-height: 1;
+  letter-spacing: -2px; margin-bottom: 2px;
+}
+.macro-unit { font-family: var(--font-m); font-size: 10px; color: var(--sage); }
+.macro-label { font-size: 12px; color: var(--bark-lt); font-weight: 300; margin-top: 6px; }
+
+/* Micronutrient bars */
+.micro-list { display: flex; flex-direction: column; gap: 14px; }
+.micro-row { display: flex; flex-direction: column; gap: 5px; }
+.micro-header { display: flex; justify-content: space-between; align-items: baseline; }
+.micro-name { font-size: 13px; font-weight: 500; color: var(--soil); }
+.micro-detail { font-size: 11px; color: var(--bark-lt); font-weight: 300; }
+.micro-pct { font-family: var(--font-m); font-size: 10.5px; color: var(--sage); }
+.micro-bar-bg {
+  height: 5px; border-radius: 3px;
+  background: rgba(44,30,18,.07); overflow: hidden;
+}
+.micro-fill {
+  height: 100%; border-radius: 3px;
+  transition: width 1.2s var(--ease-out);
+  width: 0;
+}
+
+/* Benefits */
+.benefits-col { display: flex; flex-direction: column; gap: 20px; }
+.benefit {
+  display: flex; gap: 16px; align-items: flex-start;
+  padding: 20px; border-radius: 10px;
+  background: var(--cream); border: 1px solid rgba(44,30,18,.06);
+  transition: transform .2s, box-shadow .2s;
+}
+.benefit:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(44,30,18,.07); }
+.benefit-icon {
+  width: 38px; height: 38px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+.benefit-title { font-size: 13px; font-weight: 500; color: var(--soil); margin-bottom: 4px; }
+.benefit-text  { font-size: 12px; color: var(--bark-lt); font-weight: 300; line-height: 1.7; }
+
+/* ═══════════════════════════════════════════════
+   SEEDS — full-bleed dark section
+═══════════════════════════════════════════════ */
+.seeds-section {
+  background: var(--soil);
+  padding: 88px 72px;
+  position: relative; overflow: hidden;
+}
+
+/* Botanical rings decoration */
+.seeds-section::before {
+  content: '';
+  position: absolute; right: -120px; top: -120px;
+  width: 480px; height: 480px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.04);
+}
+.seeds-section::after {
+  content: '';
+  position: absolute; right: -40px; top: -40px;
+  width: 280px; height: 280px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.04);
+}
+
+.seeds-inner {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 72px; position: relative; z-index: 1;
+}
+
+.seeds-header .section-eyebrow { color: var(--sage-lt); }
+.seeds-header .section-eyebrow::before { background: var(--sage-lt); }
+.seeds-header .section-title { color: var(--white); }
+.seeds-header .section-title em { color: var(--sage-lt); }
+
+.seeds-intro {
+  font-size: 15px; color: rgba(230,215,176,.65);
+  font-weight: 300; line-height: 1.85; margin-top: 20px;
+  max-width: 360px;
+}
+
+/* Seed steps */
+.seed-steps { display: flex; flex-direction: column; gap: 0; }
+.seed-step {
+  display: flex; gap: 20px; padding: 22px 0;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.seed-step:last-child { border-bottom: none; }
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255,255,255,.07); color: var(--straw);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-size: 14px;
+  flex-shrink: 0; margin-top: 1px;
+}
+.step-title { font-weight: 500; font-size: 14px; color: var(--straw); margin-bottom: 5px; }
+.step-desc  { font-size: 13px; color: rgba(230,215,176,.55); font-weight: 300; line-height: 1.75; }
+.step-tag {
+  display: inline-block; margin-top: 6px;
+  font-family: var(--font-m); font-size: 9px;
+  color: var(--sage-lt); background: rgba(120,160,124,.12);
+  padding: 2px 8px; border-radius: 100px; letter-spacing: .5px; text-transform: uppercase;
+}
+
+/* Seed conservation badge */
+.seed-life {
+  margin-top: 32px; padding: 18px 22px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.08); border-radius: 10px;
+  display: flex; align-items: center; gap: 14px;
+}
+.sl-icon { font-size: 24px; }
+.sl-val {
+  font-family: var(--font-d); font-size: 26px; color: var(--sage-lt);
+  letter-spacing: -1px; line-height: 1;
+}
+.sl-label { font-size: 12px; color: rgba(230,215,176,.45); font-weight: 300; margin-top: 2px; }
+
+/* ═══════════════════════════════════════════════
+   COMMUNITY NOTES — organic, human
+═══════════════════════════════════════════════ */
+.community-section {
+  padding: 88px 72px;
+  background: var(--cream);
+}
+
+.community-layout {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 72px; margin-top: 52px; align-items: start;
+}
+
+/* Notes list */
+.notes-list { display: flex; flex-direction: column; gap: 20px; }
+.note-card {
+  background: var(--white);
+  border: 1px solid rgba(44,30,18,.07);
+  border-radius: 10px;
+  padding: 22px 24px;
+  transition: transform .2s;
+}
+.note-card:hover { transform: translateY(-2px); }
+.note-top {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.note-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; flex-shrink: 0;
+}
+.note-author { font-size: 13px; font-weight: 500; color: var(--soil); }
+.note-location { font-size: 11px; color: var(--sage); font-weight: 300; }
+.note-date { margin-left: auto; font-family: var(--font-m); font-size: 9.5px; color: var(--sage-lt); }
+.note-text { font-size: 13.5px; color: var(--bark-lt); font-weight: 300; line-height: 1.8; }
+.note-tag {
+  display: inline-block; margin-top: 10px;
+  font-family: var(--font-m); font-size: 9px; color: var(--sage);
+  background: var(--cream); padding: 2px 8px; border-radius: 100px;
+}
+
+/* Contribute form */
+.contribute-form {
+  background: var(--white); border: 1px solid rgba(44,30,18,.08);
+  border-radius: 12px; padding: 32px;
+}
+.form-title {
+  font-family: var(--font-d); font-size: 20px;
+  color: var(--soil); margin-bottom: 6px;
+}
+.form-sub {
+  font-size: 13px; color: var(--bark-lt); font-weight: 300;
+  line-height: 1.7; margin-bottom: 24px;
+}
+.form-label {
+  font-family: var(--font-m); font-size: 8.5px;
+  color: var(--sage); letter-spacing: 1.5px; text-transform: uppercase;
+  margin-bottom: 7px; display: block; margin-top: 18px;
+}
+.form-label:first-of-type { margin-top: 0; }
+.form-field {
+  width: 100%; padding: 10px 14px;
+  background: var(--cream); border: 1px solid rgba(44,30,18,.09);
+  border-radius: 8px; font-family: var(--font-b); font-size: 13.5px;
+  color: var(--soil); outline: none; transition: border-color .18s;
+  line-height: 1.6;
+}
+.form-field:focus { border-color: var(--sage-lt); }
+.form-field::placeholder { color: var(--sage-lt); font-weight: 300; }
+textarea.form-field { resize: vertical; min-height: 88px; }
+
+.location-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Region chips */
+.region-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.region-chip {
+  padding: 4px 12px; border-radius: 100px; font-size: 11.5px;
+  border: 1px solid rgba(44,30,18,.1); background: transparent;
+  color: var(--bark-lt); cursor: pointer; transition: all .14s;
+  font-family: var(--font-b);
+}
+.region-chip.on { background: var(--moss); color: var(--white); border-color: var(--moss); }
+
+.form-submit {
+  width: 100%; margin-top: 22px;
+  padding: 13px; border-radius: 100px;
+  background: var(--moss); color: var(--white);
+  font-family: var(--font-b); font-size: 14px; font-weight: 500;
+  border: none; cursor: pointer; transition: background .18s, transform .15s;
+}
+.form-submit:hover { background: var(--soil); transform: translateY(-1px); }
+
+/* ═══════════════════════════════════════════════
+   PROBLEMS / MALADIES
+═══════════════════════════════════════════════ */
+.problems-section {
+  padding: 88px 72px;
+  background: var(--white);
+  border-top: 1px solid rgba(44,30,18,.07);
+}
+
+.problems-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 16px; margin-top: 52px;
+}
+.problem-card {
+  padding: 24px; border-radius: 10px;
+  background: var(--cream); border: 1px solid rgba(44,30,18,.06);
+}
+.problem-icon { font-size: 24px; margin-bottom: 12px; display: block; }
+.problem-name { font-size: 14px; font-weight: 500; color: var(--soil); margin-bottom: 8px; }
+.problem-desc { font-size: 12.5px; color: var(--bark-lt); font-weight: 300; line-height: 1.7; margin-bottom: 12px; }
+.problem-remedy {
+  font-size: 11.5px; color: var(--moss); font-weight: 400;
+  display: flex; align-items: flex-start; gap: 6px;
+  border-top: 1px solid rgba(44,30,18,.07); padding-top: 10px;
+}
+
+/* ═══════════════════════════════════════════════
+   FOOTER — minimal
+═══════════════════════════════════════════════ */
+.footer {
+  padding: 36px 72px;
+  border-top: 1px solid rgba(44,30,18,.07);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--white);
+  font-size: 12px; color: var(--sage-lt); gap: 20px;
+}
+.footer-logo { font-family: var(--font-d); font-size: 16px; color: var(--bark-lt); font-style: italic; }
+.footer-links { display: flex; gap: 20px; }
+.footer-links a { color: var(--sage-lt); text-decoration: none; transition: color .18s; }
+.footer-links a:hover { color: var(--moss); }
+
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: rgba(42,30,18,.9); color: var(--straw);
+  padding: 10px 22px; border-radius: 100px;
+  font-size: 13px; font-family: var(--font-b);
+  opacity: 0; transition: opacity .22s;
+  pointer-events: none; z-index: 9000; white-space: nowrap;
+}
+.toast.on { opacity: 1; }
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .hero { grid-template-columns: 1fr; min-height: auto; }
+  .hero-left { padding: 40px 28px 48px; }
+  .hero-right { min-height: 320px; }
+  .season-section, .stages-section, .companions-section,
+  .nutrition-section, .seeds-section, .community-section,
+  .problems-section { padding: 56px 28px; }
+  .nutrition-layout, .seeds-inner, .community-layout, .companions-grid { grid-template-columns: 1fr; gap: 40px; }
+  .problems-grid { grid-template-columns: 1fr 1fr; }
+  .stage { grid-template-columns: 56px 1fr; gap: 0 20px; }
+  .stages-timeline::before { left: 28px; }
+  .nav { padding: 0 20px; }
+  .footer { padding: 28px 28px; }
+  .section-header { flex-direction: column; align-items: flex-start; gap: 20px; }
+}
+@media (max-width: 640px) {
+  .hero-vitals { flex-direction: column; gap: 16px; }
+  .vital { border-right: none; margin-right: 0; padding-right: 0; border-bottom: 1px solid rgba(44,30,18,.07); padding-bottom: 16px; margin-bottom: 0; }
+  .vital:last-child { border-bottom: none; padding-bottom: 0; }
+  .macros-grid { grid-template-columns: 1fr 1fr; }
+  .problems-grid { grid-template-columns: 1fr; }
+  .nav-breadcrumb, .nav-links { display: none; }
+  .hero-name { font-size: 48px; letter-spacing: -2px; }
+
+  /* Tap-friendly */
+  .nav-action { font-size: 13px; padding: 8px 4px; min-height: 38px; }
+  .form-field { padding: 12px 14px; font-size: 15px; min-height: 44px; }
+  textarea.form-field { min-height: 110px; }
+  .form-submit { padding: 14px 18px; font-size: 14.5px; min-height: 48px; }
+  .companion-item { padding: 16px 0; }
+  .ci-name { font-size: 15px; }
+  .ci-why { font-size: 13px; }
+  .stage-name { font-size: 19px; }
+  .stage-tip { font-size: 13.5px; }
+  .footer { flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 32px 24px; }
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMATE ON SCROLL
+═══════════════════════════════════════════════ */
+.reveal {
+  opacity: 0; transform: translateY(24px);
+  transition: opacity .7s var(--ease-out), transform .7s var(--ease-out);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal:nth-child(2) { transition-delay: .08s; }
+.reveal:nth-child(3) { transition-delay: .16s; }
+.reveal:nth-child(4) { transition-delay: .24s; }
+
+</style>
+</head>
+<body>
+
+<!-- Shared modules -->
+<script src="plants.js"></script>
+<script src="storage.js"></script>
+<!-- Façade régionale : DOIT être chargée avant regions.js + i18n.js -->
+<script src="verdesia_region_config.js"></script>
+<script src="verdesia_plan.js"></script>
+<script src="regions.js"></script>
+<script src="i18n.js"></script>
+<script src="garden.js"></script>
+<script src="onboarding.js"></script>
+<script src="verdesia_profile.js" defer></script>
+
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════ NAV -->
+<nav class="nav">
+  <a href="verdesia_landing.html" class="nav-logo">Verd<em>ésia</em></a>
+  <div class="nav-links">
+    <a class="nav-link" href="verdesia_today.html" id="nlHoy">Hoy</a>
+    <a class="nav-link" href="verdesia_jardin.html" id="nlJardin">Mi jardín</a>
+    <a class="nav-link active" href="verdesia_explorer.html" id="nlPlantas">Plantas</a>
+    <a class="nav-link" href="verdesia_brote.html" id="nlDiag">Lectura del huerto</a>
+    <a class="nav-link" href="verdesia_observaciones.html" id="nlMemoria">Memoria</a>
+  </div>
+  <div class="nav-right">
+    <button class="nav-action" onclick="addToGarden()" id="btnSave">
+      <span class="nav-action-icon">＋</span>
+      <span id="btnSaveLbl">Añadir al jardín</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ═══════════════════ HERO -->
+<section class="hero" id="hero">
+
+  <div class="hero-left">
+    <a class="hero-back" href="verdesia_explorer.html" id="heroBack">
+      <span class="hb-arrow">←</span>
+      <span id="heroBackTxt">Volver a Plantas</span>
+    </a>
+    <div class="hero-season-strip">
+      <div class="season-dot"></div>
+      <span class="season-text" id="heroSeason">—</span>
+      <span class="season-badge" id="heroBadge">—</span>
+    </div>
+
+    <h1 class="hero-name" id="heroName">
+      —<em id="heroVariety"></em>
+    </h1>
+    <div class="hero-latin" id="heroLatin"></div>
+    <div class="hero-rarity" id="heroRarity"></div>
+
+    <p class="hero-desc" id="heroDesc"></p>
+
+    <div class="hero-vitals">
+      <div class="vital">
+        <div class="vital-label" id="vl1">Altura</div>
+        <div class="vital-value" id="vv1">—</div>
+        <div class="vital-sub" id="vs1">planta adulta</div>
+      </div>
+      <div class="vital">
+        <div class="vital-label" id="vl2">Ciclo</div>
+        <div class="vital-value" id="vv2">—</div>
+        <div class="vital-sub" id="vs2">siembra → cosecha</div>
+      </div>
+      <div class="vital">
+        <div class="vital-label" id="vl3">Espacio</div>
+        <div class="vital-value" id="vv3">—</div>
+        <div class="vital-sub" id="vs3">entre plantas</div>
+      </div>
+      <div class="vital">
+        <div class="vital-label" id="vl4">Riego</div>
+        <div class="vital-value" id="vv4">—</div>
+        <div class="vital-sub" id="vs4"></div>
+      </div>
+    </div>
+
+    <div class="scroll-cue">
+      <div class="scroll-line"></div>
+      <span id="scrollCueTxt">Ver ficha completa</span>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <!-- Botanical SVG background -->
+    <svg class="botanical-svg" viewBox="0 0 600 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="300" cy="400" r="280" stroke="white" stroke-width=".6" opacity=".08"/>
+      <circle cx="300" cy="400" r="210" stroke="white" stroke-width=".4" opacity=".06"/>
+      <circle cx="300" cy="400" r="140" stroke="white" stroke-width=".4" opacity=".05"/>
+      <ellipse cx="300" cy="400" rx="280" ry="160" stroke="white" stroke-width=".4" opacity=".05"/>
+      <ellipse cx="300" cy="400" rx="160" ry="280" stroke="white" stroke-width=".4" opacity=".05"/>
+      <line x1="300" y1="80" x2="300" y2="720" stroke="white" stroke-width=".3" opacity=".05"/>
+      <line x1="20" y1="400" x2="580" y2="400" stroke="white" stroke-width=".3" opacity=".05"/>
+      <line x1="102" y1="182" x2="498" y2="618" stroke="white" stroke-width=".2" opacity=".04"/>
+      <line x1="498" y1="182" x2="102" y2="618" stroke="white" stroke-width=".2" opacity=".04"/>
+      <!-- Small decorative dots -->
+      <circle cx="300" cy="120" r="2" fill="white" opacity=".15"/>
+      <circle cx="300" cy="680" r="2" fill="white" opacity=".15"/>
+      <circle cx="60"  cy="400" r="2" fill="white" opacity=".15"/>
+      <circle cx="540" cy="400" r="2" fill="white" opacity=".15"/>
+    </svg>
+
+    <div class="hero-right-inner">
+      <div class="plant-hero-em" id="plantHeroEm">🌱</div>
+    </div>
+
+    <div class="hero-data-strip">
+      <div class="hds-item">
+        <div class="hds-val" id="hdsZone">—</div>
+        <div class="hds-label" id="hdsZoneLbl">Zona climática</div>
+      </div>
+      <div class="hds-item">
+        <div class="hds-val" id="hdsSunVal">—</div>
+        <div class="hds-label" id="hdsSun">Luz solar</div>
+      </div>
+      <div class="hds-item">
+        <div class="hds-val" id="hdsHarv">—</div>
+        <div class="hds-label" id="hdsHarvLbl">Cosecha</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ CALENDAR -->
+<section class="season-section" id="calSection">
+  <div class="section-header">
+    <div>
+      <div class="section-eyebrow" id="calEyebrow">Calendario estacional</div>
+      <h2 class="section-title" id="calTitle">Cuándo plantar en <em>Chile</em></h2>
+    </div>
+  </div>
+
+  <!-- Month labels -->
+  <div class="cal-months-label" id="calMonths"></div>
+
+  <!-- Rows -->
+  <div class="cal-row-label" id="rowSow">Siembra</div>
+  <div class="cal-track" id="calSow"></div>
+
+  <div class="cal-row-label" id="rowPlant">Plantación</div>
+  <div class="cal-track" id="calPlant"></div>
+
+  <div class="cal-row-label" id="rowHarv">Cosecha</div>
+  <div class="cal-track" id="calHarv"></div>
+
+  <div class="cal-row-label" id="rowSeeds">Recolección de semillas</div>
+  <div class="cal-track" id="calSeeds"></div>
+
+  <div class="cal-legend">
+    <div class="cl-item"><div class="cl-swatch" style="background:rgba(200,160,58,.5)"></div><span id="legSow">Siembra</span></div>
+    <div class="cl-item"><div class="cl-swatch" style="background:rgba(59,88,56,.6)"></div><span id="legPlant">Plantación</span></div>
+    <div class="cl-item"><div class="cl-swatch" style="background:rgba(181,90,40,.6)"></div><span id="legHarv">Cosecha</span></div>
+    <div class="cl-item"><div class="cl-swatch" style="background:rgba(42,30,18,.3)"></div><span id="legSeeds">Recolección</span></div>
+  </div>
+
+  <!-- Chile-specific callout -->
+  <div class="cal-callout reveal" id="calCallout">
+    <div class="cc-icon">🌤</div>
+    <div>
+      <div class="cc-title" id="ccTitle">—</div>
+      <p class="cc-text" id="ccText"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ GROWTH STAGES -->
+<section class="stages-section" id="stagesSection">
+  <div class="section-header">
+    <div>
+      <div class="section-eyebrow" id="stagesEyebrow">Desarrollo de la planta</div>
+      <h2 class="section-title" id="stagesTitle">Etapas de <em>crecimiento</em></h2>
+    </div>
+  </div>
+
+  <div class="stages-timeline" id="stagesTimeline">
+    <!-- Rendered by JS -->
+  </div>
+</section>
+
+<!-- ═══════════════════ COMPANIONS -->
+<section class="companions-section" id="companionsSection">
+  <div class="section-header">
+    <div>
+      <div class="section-eyebrow" id="companionsEyebrow">Cultivo asociado</div>
+      <h2 class="section-title" id="companionsTitle">Plantas <em>compañeras</em></h2>
+    </div>
+  </div>
+
+  <div class="companions-grid">
+    <div>
+      <div class="companion-group-title" id="cgGood">Le va bien con</div>
+      <div class="companion-list" id="listGood"></div>
+    </div>
+    <div>
+      <div class="companion-group-title" id="cgBad">Evitar cerca de</div>
+      <div class="companion-list" id="listBad"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ USOS Y BENEFICIOS -->
+<section class="nutrition-section" id="nutritionSection">
+  <div class="section-header">
+    <div>
+      <div class="section-eyebrow" id="nutriEyebrow">Usos y beneficios</div>
+      <h2 class="section-title" id="nutriTitle">En la cocina <em>y el cuerpo</em></h2>
+    </div>
+  </div>
+
+  <div class="benefits-col" id="benefitsList" style="margin-top:40px">
+    <!-- rendered by JS -->
+  </div>
+</section>
+
+<!-- ═══════════════════ SEEDS -->
+<section class="seeds-section" id="seedsSection">
+  <div class="seeds-inner">
+    <div class="seeds-header">
+      <div class="section-eyebrow" id="seedsEyebrow">Patrimonio vivo</div>
+      <h2 class="section-title" id="seedsTitle">Recolección de <em>semillas</em></h2>
+      <p class="seeds-intro" id="seedsIntro"></p>
+      <div class="seed-life reveal" id="seedLifeBox">
+        <div class="sl-icon">📦</div>
+        <div>
+          <div class="sl-val" id="seedLife">—</div>
+          <div class="sl-label" id="seedLifeLbl">Duración de las semillas en condiciones óptimas</div>
+        </div>
+      </div>
+    </div>
+    <div class="seed-steps" id="seedSteps">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ PROBLEMS -->
+<section class="problems-section" id="problemsSection">
+  <div class="section-header">
+    <div>
+      <div class="section-eyebrow" id="problemsEyebrow">Problemas frecuentes</div>
+      <h2 class="section-title" id="problemsTitle">Reconocer y <em>remediar</em></h2>
+    </div>
+  </div>
+  <div class="problems-grid" id="problemsGrid">
+    <!-- rendered by JS -->
+  </div>
+</section>
+
+<!-- ═══════════════════ FOOTER -->
+<footer class="footer">
+  <div class="footer-logo">Verdésia</div>
+  <div class="footer-links">
+    <a href="verdesia_today.html" id="ftHome">Hoy</a>
+    <a href="verdesia_jardin.html" id="ftJardin">Mi jardín</a>
+    <a href="verdesia_explorer.html" id="ftPlants">Plantas</a>
+    <a href="verdesia_brote.html" id="ftDiag">Lectura del huerto</a>
+    <a href="verdesia_observaciones.html" id="ftMemoria">Memoria</a>
+  </div>
+  <div style="font-family:var(--font-m);font-size:9px;color:var(--sage-lt);letter-spacing:1px">
+    CHILE · MVP 2025
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════
+   JS — DINÁMICO desde plants.js
+═══════════════════════════════════════ -->
+<script>
+
+/* ─── Módulos compartidos ───────────────────── */
+const Garden     = window.SemencaGarden;
+const Storage    = window.SemencaStorage;
+const I18n       = window.SemencaI18n;
+const CATALOGUE  = window.SEMENCA_PLANTS;
+const CATEGORIES = window.SEMENCA_CATEGORIES;
+const NOTE_TYPES = window.SEMENCA_NOTE_TYPES;
+
+/* ─── Estado ─────────────────────────────────── */
+// `lang` ya no es una variable propia: viene siempre de SemencaI18n
+Object.defineProperty(window, 'lang', { get: () => I18n.getLang() });
+const MONTHS = { fr: Garden.MONTHS_FR, es: Garden.MONTHS_ES };
+const currentMonth = new Date().getMonth();
+
+/* ─── Resolver planta desde URL ─────────────── */
+const urlParams = new URLSearchParams(window.location.search);
+const requestedId = urlParams.get('id') || 'tomate';
+const PLANT = Garden.getPlant(requestedId) || Garden.getPlant('tomate');
+if (!PLANT) {
+  document.body.innerHTML = '<p style="padding:48px;font-family:Georgia,serif">Planta no encontrada.</p>';
+  throw new Error('No plant in catalogue');
+}
+
+/* ─── Helpers de texto ──────────────────────── */
+function t(obj, fallback) {
+  if (obj == null) return fallback || '';
+  if (typeof obj === 'string') return obj;
+  return obj[lang] || obj.es || obj.fr || fallback || '';
+}
+function tArr(obj) {
+  if (!obj) return [];
+  const v = obj[lang] || obj.es || obj.fr;
+  return Array.isArray(v) ? v : (v ? [v] : []);
+}
+
+/* (datos hardcoded eliminados — fuente única: plants.js)
+const _LEGACY_PLANT = {
+  name:  { fr: 'Tomate',              es: 'Tomate' },
+  variety: { fr: 'Légumes d\'été',   es: 'Hortalizas de verano' },
+  latin: 'Solanum lycopersicum',
+  desc: {
+    fr: 'La tomate est le cœur du jardin chilien d\'été. De Santiago à la région du Maule, sa culture fait partie de la mémoire familiale et de la cuisine quotidienne. Résistante à la chaleur méditerranéenne, généreuse en fruits de décembre à mars.',
+    es: 'El tomate es el corazón del huerto chileno de verano. Desde Santiago hasta la región del Maule, su cultivo forma parte de la memoria familiar y de la cocina cotidiana. Resistente al calor mediterráneo, generoso en frutos entre diciembre y marzo.'
+  },
+  season: { fr: 'Printemps · Sep–Nov · Santiago', es: 'Primavera · Sep–Nov · Santiago' },
+  badge:  { fr: 'Moment de semer',     es: 'Hora de sembrar' },
+
+  // Calendar data [Jan..Dec] for each hemisphere
+  cal: {
+    nord: {
+      sow:   [0,1,1,0,0,0,0,0,0,0,0,0],
+      plant: [0,0,0,1,1,1,0,0,0,0,0,0],
+      harv:  [0,0,0,0,0,0,1,1,1,1,0,0],
+      seeds: [0,0,0,0,0,0,0,0,1,1,0,0]
+    },
+    sud: {
+      sow:   [0,0,0,0,0,0,0,1,1,0,0,0],
+      plant: [0,0,0,0,0,0,0,0,0,1,1,0],
+      harv:  [1,1,1,0,0,0,0,0,0,0,0,1],
+      seeds: [1,1,0,0,0,0,0,0,0,0,0,0]
+    }
+  },
+
+  callout: {
+    title: { fr: 'Santiago, zone Csb', es: 'Santiago, zona Csb' },
+    text: {
+      fr: 'À Santiago, la tomate se sème sous abri en <strong>septembre</strong> et se transplante en pleine terre en <strong>octobre</strong>, après les dernières gelées. La récolte s\'étend de <strong>décembre à mars</strong>. Dans les zones plus chaudes comme Valparaíso ou Coquimbo, le cycle se décale de 2–3 semaines.',
+      es: 'En Santiago, el tomate se siembra bajo cubierta en <strong>septiembre</strong> y se trasplanta a tierra firme en <strong>octubre</strong>, tras las últimas heladas. La cosecha se extiende de <strong>diciembre a marzo</strong>. En zonas más cálidas como Valparaíso o Coquimbo, el ciclo se adelanta 2–3 semanas.'
+    }
+  },
+
+  stages: [
+    { color: '#FFF8E6', bg: 'rgba(200,160,58,.15)',
+      name: { fr: 'Germination',               es: 'Germinación' },
+      timing: { fr: 'J0 → J7–10',              es: 'D0 → D7–10' },
+      desc: {
+        fr: 'La graine absorbe l\'humidité et brise sa dormance. La radicule perce le tégument et cherche l\'ancrage dans le substrat. Le cotylédon émerge et se déploie vers la lumière.',
+        es: 'La semilla absorbe humedad y rompe su latencia. La radícula perfora el tegumento buscando anclaje en el sustrato. El cotiledón emerge y se despliega hacia la luz.'
+      },
+      tips: {
+        fr: ['Température du substrat : 22–26°C idéal.','Humidité constante, sans excès — jamais détrempé.','Pas besoin de lumière durant la germination, mais dès l\'émergence : lumière maximale.'],
+        es: ['Temperatura del sustrato: 22–26°C ideal.','Humedad constante, sin exceso — nunca encharcado.','No se necesita luz durante la germinación, pero desde la emergencia: luz máxima.']
+      }
+    },
+    { color: '#E8F5E9', bg: 'rgba(59,88,56,.12)',
+      name: { fr: 'Plantule',                   es: 'Plántula' },
+      timing: { fr: 'J10 → J30',                es: 'D10 → D30' },
+      desc: {
+        fr: 'Les deux cotylédons se déploient, puis les premières vraies feuilles apparaissent. Le plant développe son système racinaire et commence à synthétiser sa propre nourriture.',
+        es: 'Los dos cotiledones se despliegan, luego aparecen las primeras hojas verdaderas. La planta desarrolla su sistema radicular y comienza a sintetizar su propio alimento.'
+      },
+      tips: {
+        fr: ['14–16h de lumière par jour — fenêtre sud ou serre.','Commencer la fertilisation légère à J15 : azote dilué à ¼ de dose.','Repiquer individuellement dès 4 vraies feuilles pour éviter l\'étiolement.'],
+        es: ['14–16h de luz al día — ventana sur o invernadero.','Iniciar fertilización ligera en D15: nitrógeno diluido a ¼ de dosis.','Repicar individualmente con 4 hojas verdaderas para evitar el ahilamiento.']
+      }
+    },
+    { color: '#E8F5E9', bg: 'rgba(59,88,56,.12)',
+      name: { fr: 'Croissance végétative',      es: 'Crecimiento vegetativo' },
+      timing: { fr: 'J30 → J55',                es: 'D30 → D55' },
+      desc: {
+        fr: 'Le plant développe ses tiges latérales, ses grandes feuilles composées et son système racinaire profond. Croissance rapide — 3 à 5 cm par jour dans les bonnes conditions.',
+        es: 'La planta desarrolla tallos laterales, grandes hojas compuestas y sistema radicular profundo. Crecimiento rápido — 3 a 5 cm por día en buenas condiciones.'
+      },
+      tips: {
+        fr: ['Tuteurage progressif — attacher délicatement sans serrer.','Éboutonner les gourmands axillaires pour concentrer l\'énergie sur la tige principale.','Arroser au pied, jamais sur le feuillage — prévient les maladies fongiques.'],
+        es: ['Tutorado progresivo — atar con delicadeza sin apretar.','Eliminar brotes axilares para concentrar energía en el tallo principal.','Regar a la base, nunca sobre el follaje — previene enfermedades fúngicas.']
+      }
+    },
+    { color: '#FFF3E0', bg: 'rgba(200,160,58,.12)',
+      name: { fr: 'Floraison',                  es: 'Floración' },
+      timing: { fr: 'J55 → J70',                es: 'D55 → D70' },
+      desc: {
+        fr: 'Les grappes florales jaunes apparaissent aux nœuds. La pollinisation est assurée par le vent et les insectes butineurs. C\'est une étape délicate — éviter les chocs hydriques.',
+        es: 'Aparecen racimos florales amarillos en los nudos. La polinización la aseguran el viento y los insectos. Etapa delicada — evitar estrés hídrico.'
+      },
+      tips: {
+        fr: ['Pas d\'engrais azoté en excès : favorise le feuillage au détriment des fruits.','Passer au purin de consoude (potassium) pour favoriser la fructification.','Secouer légèrement les tiges par vent calme pour aider la pollinisation.'],
+        es: ['No excederse con nitrógeno: favorece el follaje a expensas de los frutos.','Cambiar a purín de consuelda (potasio) para favorecer la fructificación.','Sacudir suavemente los tallos con viento calmado para ayudar la polinización.']
+      }
+    },
+    { color: '#FBE9E7', bg: 'rgba(181,90,40,.1)',
+      name: { fr: 'Fructification & maturité',  es: 'Fructificación & madurez' },
+      timing: { fr: 'J70 → J90',                es: 'D70 → D90' },
+      desc: {
+        fr: 'Les fruits grossissent et commencent leur véraison — le changement de couleur du vert vers le rouge, bordeaux ou jaune selon la variété. La maturité est atteinte quand le fruit cède légèrement sous les doigts.',
+        es: 'Los frutos crecen y comienzan el envero — cambio de color del verde al rojo, burdeos o amarillo según la variedad. La madurez se alcanza cuando el fruto cede ligeramente al tacto.'
+      },
+      tips: {
+        fr: ['Réduire l\'arrosage en fin de cycle pour concentrer les saveurs.','Récolter régulièrement pour stimuler la production de nouveaux fruits.','Les fruits se cueillent dès que la couleur est uniforme — ne pas attendre.'],
+        es: ['Reducir el riego al final del ciclo para concentrar sabores.','Cosechar regularmente para estimular la producción de nuevos frutos.','Cosechar cuando el color es uniforme — no esperar demasiado.']
+      }
+    }
+  ],
+
+  companions: {
+    good: [
+      { em: '🌿', name: {fr:'Basilic',es:'Albahaca'}, why: {fr:'Repousse les pucerons et mouches du sol. Association classique du potager méditerranéen.',es:'Repele pulgones y moscas del suelo. Asociación clásica del huerto mediterráneo.'}, badge: 'Excelente' },
+      { em: '🌼', name: {fr:"Œillet d'Inde",es:'Tagete'}, why: {fr:'Sécrète des substances répulsives contre les nématodes via ses racines. Planter en bordure.',es:'Secreta sustancias repelentes contra nematodos por sus raíces. Plantar en borde.'}, badge: 'Excelente' },
+      { em: '🥕', name: {fr:'Carotte',es:'Zanahoria'}, why: {fr:'Ameublit le sol en profondeur pour les racines de la tomate. Bonne cohabitation.',es:'Afloja el suelo en profundidad para las raíces del tomate. Buena cohabitación.'}, badge: 'Bueno' },
+      { em: '🧅', name: {fr:'Ciboulette',es:'Cebollín'}, why: {fr:'Prévient certaines maladies fongiques et repousse les insectes nuisibles.',es:'Previene enfermedades fúngicas y repele insectos dañinos.'}, badge: 'Bueno' },
+    ],
+    bad: [
+      { em: '🌾', name: {fr:'Fenouil',es:'Hinojo'}, why: {fr:'Libère des substances allélopathiques qui inhibent fortement la croissance de la tomate. Tenir à l\'écart.',es:'Libera sustancias alelopáticas que inhiben fuertemente el crecimiento del tomate. Mantener alejado.'}, badge: 'Evitar' },
+      { em: '🌽', name: {fr:'Maïs',es:'Maíz'}, why: {fr:'Partagent les mêmes ravageurs — héliothis et pucerons prolifèrent sur les deux.',es:'Comparten las mismas plagas — heliothis y pulgones proliferan en ambos.'}, badge: 'Evitar' },
+    ]
+  },
+
+  micros: [
+    { name: 'Licopeno',  detail: {fr:'~8 000 µg · antioxydant',es:'~8 000 µg · antioxidante'}, pct: 80, color: '#B55A28' },
+    { name: {fr:'Vitamine C',es:'Vitamina C'}, detail: '13 mg · 14% VDR', pct: 14, color: '#D07848' },
+    { name: 'Potasio',   detail: '237 mg · 12% VDR', pct: 12, color: '#3B5838' },
+    { name: {fr:'Vitamine A',es:'Vitamina A'}, detail: '42 µg · 5% VDR', pct: 5,  color: '#C8A03A' },
+    { name: {fr:'Vitamine K',es:'Vitamina K'}, detail: '7,9 µg · 7% VDR', pct: 7,  color: '#78A07C' },
+    { name: {fr:'Folates B9',es:'Folatos B9'}, detail: '15 µg · 8% VDR', pct: 8,  color: '#A9C8AD' },
+  ],
+
+  benefits: [
+    { icon: '❤️', bg: 'rgba(181,90,40,.1)', name: {fr:'Santé cardiovasculaire',es:'Salud cardiovascular'},
+      text: {fr:'Le lycopène et le potassium contribuent à réduire la pression artérielle. La tomate Noire de Crimée contient 2× plus de lycopène que la tomate rouge standard.',
+             es:'El licopeno y el potasio contribuyen a reducir la presión arterial. El tomate Negro de Crimea contiene 2× más licopeno que el tomate rojo estándar.'} },
+    { icon: '🛡️', bg: 'rgba(200,160,58,.1)', name: {fr:'Antioxydant puissant',es:'Antioxidante potente'},
+      text: {fr:'Riche en lycopène, vitamine C et bêta-carotène. Ces antioxydants neutralisent les radicaux libres et renforcent les défenses naturelles de l\'organisme.',
+             es:'Rico en licopeno, vitamina C y betacaroteno. Estos antioxidantes neutralizan los radicales libres y refuerzan las defensas naturales del organismo.'} },
+    { icon: '🌿', bg: 'rgba(59,88,56,.08)', name: {fr:'Anti-inflammatoire',es:'Antiinflamatorio'},
+      text: {fr:'Les flavonoïdes et polyphénols présents réduisent l\'inflammation chronique. Particulièrement intéressant consommé cru en salade.',
+             es:'Los flavonoides y polifenoles presentes reducen la inflamación crónica. Especialmente interesante consumido crudo en ensalada.'} },
+  ],
+
+  seedSteps: [
+    { title: {fr:'Choisir le fruit',es:'Elegir el fruto'},
+      desc:  {fr:'Sélectionner le plus beau fruit, parfaitement mûr, sur le plant le plus vigoureux. Laisser légèrement sur-mûrir — presque fondant — pour garantir des graines matures.',
+              es:'Seleccionar el fruto más hermoso, perfectamente maduro, de la planta más vigorosa. Dejar sobremadurar ligeramente — casi blando — para garantizar semillas maduras.'},
+      tag: 'Feb–Mar · Hemisferio Sur' },
+    { title: {fr:'Fermentation',es:'Fermentación'},
+      desc:  {fr:'Presser les graines et la pulpe dans un verre d\'eau. Laisser fermenter 2–4 jours à 22°C en remuant chaque jour. La fermentation détruit le gel inhibiteur de germination.',
+              es:'Exprimir las semillas y pulpa en un vaso de agua. Dejar fermentar 2–4 días a 22°C removiendo cada día. La fermentación destruye el gel inhibidor de germinación.'},
+      tag: '2–4 días · 22°C' },
+    { title: {fr:'Rinçage & tri',es:'Lavado & selección'},
+      desc:  {fr:'Verser dans une passoire fine, rincer abondamment. Les graines viables coulent, les creuses flottent. Éliminer celles qui flottent — elles ne germeront pas.',
+              es:'Verter en un colador fino, enjuagar abundantemente. Las semillas viables se hunden, las huecas flotan. Eliminar las que flotan — no germinarán.'},
+      tag: 'Viables = se hunden' },
+    { title: {fr:'Séchage',es:'Secado'},
+      desc:  {fr:'Étaler sur une assiette en céramique ou du papier sulfurisé — jamais d\'essuie-tout. Sécher 10–14 jours à l\'abri de la lumière et de l\'humidité, à moins de 35°C.',
+              es:'Extender sobre un plato de cerámica o papel de horno — nunca papel de cocina. Secar 10–14 días alejado de luz y humedad, a menos de 35°C.'},
+      tag: '10–14 días · < 35°C' },
+    { title: {fr:'Conservation',es:'Conservación'},
+      desc:  {fr:'Stocker dans une enveloppe en papier kraft dans un bocal hermétique avec un sachet de silica gel. Au réfrigérateur ou dans un endroit frais et sec. Étiqueter avec variété, date et zone climatique.',
+              es:'Guardar en sobre de papel kraft dentro de un frasco hermético con bolsita de sílica gel. En nevera o lugar fresco y seco. Etiquetar con variedad, fecha y zona climática.'},
+      tag: '4–6 años de vida útil' },
+  ],
+
+  problems: [
+    { icon: '🍃', name: {fr:'Mildiou',es:'Mildiu'},
+      desc: {fr:'Taches brunes huileuses sur les feuilles, duvet blanc sous la feuille par temps humide. Se propage rapidement par splashing.',
+             es:'Manchas marrones aceitosas en hojas, pelusa blanca bajo la hoja con tiempo húmedo. Se propaga rápidamente por salpicadura.'},
+      remedy: {fr:'Traiter à la bouillie bordelaise. Éviter l\'arrosage sur le feuillage. Favoriser la circulation d\'air.',
+               es:'Tratar con caldo bordelés. Evitar el riego sobre el follaje. Favorecer la circulación de aire.'} },
+    { icon: '🔴', name: {fr:'Tomate blossom end rot',es:'Pudrición apical'},
+      desc: {fr:'Tache noire déprimée à l\'extrémité des fruits. Carence en calcium souvent liée à un arrosage irrégulier, non à un sol pauvre.',
+             es:'Mancha negra deprimida en el extremo del fruto. Carencia de calcio a menudo por riego irregular, no por suelo pobre.'},
+      remedy: {fr:'Régulariser l\'arrosage. Pailler pour maintenir l\'humidité constante. Pulvériser du chlorure de calcium dilué.',
+               es:'Regularizar el riego. Acolchar para mantener humedad constante. Pulverizar cloruro de calcio diluido.'} },
+    { icon: '🌀', name: {fr:'Virus de la mosaïque',es:'Virus del mosaico'},
+      desc: {fr:'Feuilles déformées et marbrées jaune-vert. Transmis par les pucerons. Aucun traitement — éliminer les plants atteints.',
+             es:'Hojas deformadas y jaspeadas amarillo-verde. Transmitido por pulgones. Sin tratamiento — eliminar plantas afectadas.'},
+      remedy: {fr:'Lutter contre les pucerons (basilic, savon noir). Ne jamais fumer près des plants. Désinfecter les outils.',
+               es:'Controlar pulgones (albahaca, jabón negro). No fumar cerca de las plantas. Desinfectar herramientas.'} },
+  ],
+
+  communityNotes: [
+    { avatar: 'M', avatarBg: '#E8F5E9', avatarColor: '#3B5838',
+      author: 'María José', location: 'Santiago, Lo Barnechea', date: 'Nov 2025',
+      text: {fr:'Cette année j\'ai semé en caissette le 15 septembre et transplanté le 20 octobre. Le terrain était très chaud — résultats excellents dès décembre. Variété Daniela F1.',
+             es:'Este año sembré en bandeja el 15 de septiembre y trasplanté el 20 de octubre. El terreno estaba muy caliente — excelentes resultados desde diciembre. Variedad Daniela F1.'},
+      tag: 'Zona Csb · Santiago' },
+    { avatar: 'C', avatarBg: '#FFF3E0', avatarColor: '#B55A28',
+      author: 'Carlos', location: 'Valparaíso, Cerro Alegre', date: 'Ene 2026',
+      text: {fr:'Ici à Valparaíso le cycle est plus précoce. J\'ai récolté mi-novembre après un semis en août. La variété Tomate limache locale est magnifique — à préserver absolument.',
+             es:'Aquí en Valparaíso el ciclo es más precoz. Cosechamos a mediados de noviembre tras siembra en agosto. La variedad Tomate limache local es espectacular — hay que preservarla.'},
+      tag: 'Zona Csb · Valparaíso' },
+    { avatar: 'A', avatarBg: '#E3F2FD', avatarColor: '#3B5838',
+      author: 'Ana Luisa', location: 'Curicó, Maule', date: 'Feb 2026',
+      text: {fr:'Le Maule est idéal pour la tomate. Ici on sème en octobre directement en pleine terre car il n\'y a presque plus de gel. La tomate costilla de buey donne des fruits énormes.',
+             es:'El Maule es ideal para el tomate. Aquí sembramos en octubre directamente a tierra porque casi no hay heladas. El tomate costilla de buey da frutos enormes.'},
+      tag: 'Zona Cfa · Maule' },
+  ],
+
+  regions: ['Santiago', 'Valparaíso', 'Maule', 'O\'Higgins', 'Biobío', 'Araucanía', 'Los Lagos', 'Otro'],
+};
+*/
+
+/* (i18n + render legacy reemplazado por código dinámico al final del script)
+// ─── I18N STRINGS ───────────────────────────────
+const S = {
+  es: {
+    bcCurrent: 'Tomate',
+    btnSaveLbl: 'Guardar',
+    heroSeason: 'Primavera · Sep–Nov · Santiago',
+    heroBadge:  'Hora de sembrar',
+    vl1:'Altura', vs1:'indeterminado',
+    vl2:'Madurez', vs2:'tras plantación',
+    vl3:'Espacio', vs3:'entre plantas',
+    vl4:'Riego', vv4:'Regular', vs4:'sin exceso',
+    hdsZoneLbl:'Zona climática', hdsSun:'Luz solar', hdsHarvLbl:'Cosecha',
+    scrollCueTxt:'Ver ficha completa',
+    calEyebrow:'Calendario estacional', calTitle:'Cuándo plantar en <em>Chile</em>',
+    hNord:'Hemisferio Norte', hSud:'Hemisferio Sur',
+    rowSow:'Siembra', rowPlant:'Plantación', rowHarv:'Cosecha', rowSeeds:'Recolección de semillas',
+    legSow:'Siembra', legPlant:'Plantación', legHarv:'Cosecha', legSeeds:'Recolección',
+    stagesEyebrow:'Desarrollo de la planta', stagesTitle:'Etapas de <em>crecimiento</em>',
+    companionsEyebrow:'Cultivo asociado', companionsTitle:'Plantas <em>compañeras</em>',
+    cgGood:'Le va bien con', cgBad:'Evitar cerca de',
+    nutriEyebrow:'Composición nutricional', nutriTitle:'Nutrición <em>& salud</em>',
+    macroKcal:'Calorías por 100g', macroProt:'Proteínas', macroCarb:'Carbohidratos',
+    nutriSource:'Valores por 100g de fruto fresco · Fuente: USDA / Ciqual',
+    seedsEyebrow:'Patrimonio vivo', seedsTitle:'Recolección de <em>semillas</em>',
+    seedLife:'4–6 años', seedLifeLbl:'Duración de las semillas en condiciones óptimas',
+    problemsEyebrow:'Problemas frecuentes', problemsTitle:'Reconocer y <em>remediar</em>',
+    communityEyebrow:'Notas de jardineros', communityTitle:'La memoria <em>compartida</em>',
+    formTitle:'Añadir mi nota', formSub:'Comparte lo que observas en tu jardín. Cada nota enriquece el conocimiento colectivo.',
+    formLabelLoc:'Tu zona', formLabelNote:'Tu observación',
+    formCity:'Ciudad…', formRegion:'Región…',
+    formNote:'Fecha de siembra, resultado, consejo, variedad usada…',
+    formSubmit:'Publicar mi nota →',
+    ftHome:'Inicio', ftJardin:'Mi jardín', ftPlants:'Plantas',
+    hdsHarv:'Dic–Mar', hdsZone:'Csb / Cfa',
+    toastSaved:'Planta guardada ♡', toastNote:'Nota publicada — gracias',
+  },
+  fr: {
+    bcCurrent: 'Tomate',
+    btnSaveLbl: 'Sauvegarder',
+    heroSeason: 'Printemps · Sep–Nov · Santiago',
+    heroBadge:  'Moment de semer',
+    vl1:'Hauteur', vs1:'indéterminée',
+    vl2:'Maturité', vs2:'après plantation',
+    vl3:'Espacement', vs3:'entre plants',
+    vl4:'Arrosage', vv4:'Régulier', vs4:'sans excès',
+    hdsZoneLbl:'Zone climatique', hdsSun:'Lumière', hdsHarvLbl:'Récolte',
+    scrollCueTxt:'Voir la fiche complète',
+    calEyebrow:'Calendrier saisonnier', calTitle:'Quand planter au <em>Chili</em>',
+    hNord:'Hémisphère Nord', hSud:'Hémisphère Sud',
+    rowSow:'Semis', rowPlant:'Plantation', rowHarv:'Récolte', rowSeeds:'Collecte des semences',
+    legSow:'Semis', legPlant:'Plantation', legHarv:'Récolte', legSeeds:'Collecte',
+    stagesEyebrow:'Développement de la plante', stagesTitle:'Étapes de <em>croissance</em>',
+    companionsEyebrow:'Culture associée', companionsTitle:'Plantes <em>compagnes</em>',
+    cgGood:'Se marie bien avec', cgBad:'Éviter à côté de',
+    nutriEyebrow:'Composition nutritionnelle', nutriTitle:'Nutrition <em>& santé</em>',
+    macroKcal:'Calories par 100g', macroProt:'Protéines', macroCarb:'Glucides',
+    nutriSource:'Valeurs pour 100g de fruit frais · Source : USDA / Ciqual',
+    seedsEyebrow:'Patrimoine vivant', seedsTitle:'Collecte des <em>semences</em>',
+    seedLife:'4–6 ans', seedLifeLbl:'Durée de vie des semences en conditions optimales',
+    problemsEyebrow:'Problèmes fréquents', problemsTitle:'Reconnaître et <em>remédier</em>',
+    communityEyebrow:'Notes de jardiniers', communityTitle:'La mémoire <em>partagée</em>',
+    formTitle:'Ajouter ma note', formSub:'Partage ce que tu observes dans ton jardin. Chaque note enrichit la connaissance collective.',
+    formLabelLoc:'Ta zone', formLabelNote:'Ton observation',
+    formCity:'Ville…', formRegion:'Région…',
+    formNote:'Date de semis, résultat, conseil, variété utilisée…',
+    formSubmit:'Publier ma note →',
+    ftHome:'Accueil', ftJardin:'Mon jardin', ftPlants:'Plantes',
+    hdsHarv:'Déc–Mars', hdsZone:'Csb / Cfa',
+    toastSaved:'Plante sauvegardée ♡', toastNote:'Note publiée — merci',
+  }
+};
+
+// ─── HEMI STATE ──────────────────────────────────
+let hemi = 'sud';
+
+// ─── RENDER ──────────────────────────────────────
+function txt(key) { return S[lang][key] || key; }
+function ptext(obj) { return typeof obj === 'object' ? (obj[lang] || obj.es) : obj; }
+
+function applyLang() {
+  // Static IDs
+  const ids = ['bcCurrent','btnSaveLbl','heroSeason','heroBadge',
+    'vl1','vs1','vl2','vs2','vl3','vs3','vl4','vv4','vs4',
+    'hdsZoneLbl','hdsSun','hdsHarvLbl','scrollCueTxt',
+    'hNord','hSud','rowSow','rowPlant','rowHarv','rowSeeds',
+    'legSow','legPlant','legHarv','legSeeds',
+    'stagesEyebrow','companionsEyebrow',
+    'cgGood','cgBad',
+    'nutriEyebrow','macroKcal','macroProt','macroCarb','nutriSource',
+    'seedsEyebrow','seedLife','seedLifeLbl',
+    'problemsEyebrow','communityEyebrow',
+    'formTitle','formSub','formLabelLoc','formLabelNote','formSubmit',
+    'ftHome','ftJardin','ftPlants',
+    'hdsHarv','hdsZone',
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt(id);
+  });
+
+  // innerHTML for titles with <em>
+  const htmlIds = ['calTitle','stagesTitle','companionsTitle','nutriTitle',
+                   'seedsTitle','problemsTitle','communityTitle'];
+  htmlIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = txt(id);
+  });
+
+  // Input placeholders
+  const ph = { formCity: txt('formCity'), formRegion: txt('formRegion'), formNote: txt('formNote') };
+  Object.entries(ph).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.placeholder = val;
+  });
+
+  // Hero dynamic content
+  document.getElementById('heroName').innerHTML = `${ptext(PLANT.name)}<em id="heroVariety">${ptext(PLANT.variety)}</em>`;
+  document.getElementById('heroDesc').textContent = ptext(PLANT.desc);
+  document.getElementById('ccTitle').textContent  = ptext(PLANT.callout.title);
+  document.getElementById('ccText').innerHTML     = ptext(PLANT.callout.text);
+  document.getElementById('calEyebrow').textContent = txt('calEyebrow');
+  document.getElementById('seedsIntro').textContent = lang==='es'
+    ? 'El tomate es autógamo — se poliniza solo. Sus semillas, bien conservadas, reproducen fielmente la variedad año tras año. Recolectar y compartir semillas es un gesto de transmisión cultural.'
+    : 'La tomate est autogame — elle se pollinise elle-même. Ses semences, bien conservées, reproduisent fidèlement la variété d\'année en année. Récolter et partager des semences est un geste de transmission culturelle.';
+
+  document.querySelectorAll('.lb').forEach(b => b.classList.toggle('on', b.textContent === lang.toUpperCase()));
+  document.documentElement.lang = lang;
+
+  renderCalendar();
+  renderStages();
+  renderCompanions();
+  renderMicros();
+  renderBenefits();
+  renderSeedSteps();
+  renderProblems();
+  renderCommunity();
+}
+
+function setLang(l) { lang = l; applyLang(); }
+
+// ─── CALENDAR ────────────────────────────────────
+function renderCalendar() {
+  const months = MONTHS[lang];
+  const ml = document.getElementById('calMonths');
+  ml.innerHTML = months.map(m => `<div class="cml">${m}</div>`).join('');
+
+  const data = PLANT.cal[hemi];
+  const rows = [
+    ['calSow',   data.sow,   'active-sow'],
+    ['calPlant', data.plant, 'active-plant'],
+    ['calHarv',  data.harv,  'active-harv'],
+    ['calSeeds', data.seeds, 'active-seeds'],
+  ];
+  rows.forEach(([id, arr, cls]) => {
+    const el = document.getElementById(id);
+    el.innerHTML = arr.map((v, i) => {
+      const isCurrent = (i === currentMonth);
+      return `<div class="cal-bar${v ? ' '+cls : ''}${isCurrent ? ' current-month' : ''}" title="${months[i]}"></div>`;
+    }).join('');
+  });
+}
+
+function setHemi(btn, h) {
+  hemi = h;
+  document.querySelectorAll('.hemi-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderCalendar();
+}
+
+// ─── GROWTH STAGES ───────────────────────────────
+const STAGE_COLORS = [
+  '#FFF8E6','#dceede','#d8eedb','#FFF3E0','#FBE9E7'
+];
+function renderStages() {
+  const tl = document.getElementById('stagesTimeline');
+  tl.innerHTML = '';
+  PLANT.stages.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'stage reveal';
+    div.style.transitionDelay = `${i * .1}s`;
+    div.innerHTML = `
+      <div class="stage-num-col">
+        <div class="stage-circle" style="background:${STAGE_COLORS[i] || '#f0f0f0'}">
+          ${['🌱','🌿','🌳','🌸','🍅'][i] || '●'}
+        </div>
+      </div>
+      <div class="stage-body">
+        <div class="stage-meta">
+          <div class="stage-name">${ptext(s.name)}</div>
+          <div class="stage-timing">${ptext(s.timing)}</div>
+        </div>
+        <p class="stage-desc">${ptext(s.desc)}</p>
+        <div class="stage-tips">
+          ${ptext(s.tips).map(tip =>
+            `<div class="stage-tip"><span class="tip-arrow">→</span><span>${tip}</span></div>`
+          ).join('')}
+        </div>
+      </div>`;
+    tl.appendChild(div);
+  });
+  observeReveal();
+}
+
+// ─── COMPANIONS ──────────────────────────────────
+function renderCompanions() {
+  ['Good','Bad'].forEach(type => {
+    const el = document.getElementById(`list${type}`);
+    const arr = PLANT.companions[type.toLowerCase()];
+    el.innerHTML = arr.map(c => `
+      <div class="companion-item">
+        <div class="ci-em">${c.em}</div>
+        <div class="ci-info">
+          <div class="ci-name">${ptext(c.name)}</div>
+          <div class="ci-why">${ptext(c.why)}</div>
+        </div>
+        <span class="ci-badge ${type.toLowerCase()}">${c.badge}</span>
+      </div>`).join('');
+  });
+}
+
+// ─── MICROS ──────────────────────────────────────
+function renderMicros() {
+  const el = document.getElementById('microList');
+  el.innerHTML = PLANT.micros.map(m => `
+    <div class="micro-row reveal">
+      <div class="micro-header">
+        <div>
+          <span class="micro-name">${ptext(m.name)}</span>
+          <span class="micro-detail" style="margin-left:8px">${ptext(m.detail)}</span>
+        </div>
+        <span class="micro-pct">${m.pct}%</span>
+      </div>
+      <div class="micro-bar-bg">
+        <div class="micro-fill" data-pct="${m.pct}" style="background:${m.color}"></div>
+      </div>
+    </div>`).join('');
+}
+
+function animateBars() {
+  document.querySelectorAll('.micro-fill').forEach(el => {
+    el.style.width = el.dataset.pct + '%';
+  });
+}
+
+// ─── BENEFITS ────────────────────────────────────
+function renderBenefits() {
+  const el = document.getElementById('benefitsList');
+  el.innerHTML = PLANT.benefits.map(b => `
+    <div class="benefit reveal">
+      <div class="benefit-icon" style="background:${b.bg}">${b.icon}</div>
+      <div>
+        <div class="benefit-title">${ptext(b.name)}</div>
+        <div class="benefit-text">${ptext(b.text)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── SEED STEPS ──────────────────────────────────
+function renderSeedSteps() {
+  const el = document.getElementById('seedSteps');
+  el.innerHTML = PLANT.seedSteps.map((s, i) => `
+    <div class="seed-step reveal">
+      <div class="step-num">${i + 1}</div>
+      <div>
+        <div class="step-title">${ptext(s.title)}</div>
+        <div class="step-desc">${ptext(s.desc)}</div>
+        <span class="step-tag">${s.tag}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ─── PROBLEMS ────────────────────────────────────
+function renderProblems() {
+  const el = document.getElementById('problemsGrid');
+  el.innerHTML = PLANT.problems.map(p => `
+    <div class="problem-card reveal">
+      <span class="problem-icon">${p.icon}</span>
+      <div class="problem-name">${ptext(p.name)}</div>
+      <div class="problem-desc">${ptext(p.desc)}</div>
+      <div class="problem-remedy">
+        <span style="color:var(--moss);font-size:12px">→</span>
+        <span>${ptext(p.remedy)}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ─── COMMUNITY ───────────────────────────────────
+function renderCommunity() {
+  const notesList = document.getElementById('notesList');
+  notesList.innerHTML = PLANT.communityNotes.map(n => `
+    <div class="note-card reveal">
+      <div class="note-top">
+        <div class="note-avatar" style="background:${n.avatarBg};color:${n.avatarColor}">${n.avatar}</div>
+        <div>
+          <div class="note-author">${n.author}</div>
+          <div class="note-location">${n.location}</div>
+        </div>
+        <div class="note-date">${n.date}</div>
+      </div>
+      <div class="note-text">${ptext(n.text)}</div>
+      <span class="note-tag">${n.tag}</span>
+    </div>`).join('');
+
+  // Region chips
+  const chips = document.getElementById('regionChips');
+  chips.innerHTML = PLANT.regions.map(r =>
+    `<button class="region-chip" onclick="selectRegion(this)">${r}</button>`
+  ).join('');
+}
+
+let selectedRegion = '';
+function selectRegion(btn) {
+  document.querySelectorAll('.region-chip').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  selectedRegion = btn.textContent;
+  document.getElementById('formRegion').value = btn.textContent;
+}
+
+function submitNote() {
+  const text = document.getElementById('formNote').value.trim();
+  if (!text) return;
+  const city = document.getElementById('formCity').value.trim() || '—';
+  const region = document.getElementById('formRegion').value.trim() || '—';
+  const now = new Date();
+  const months = MONTHS[lang];
+  const date = `${months[now.getMonth()]} ${now.getFullYear()}`;
+  const initial = city[0]?.toUpperCase() || '?';
+  const colors = ['#E8F5E9','#FFF3E0','#E3F2FD','#FBE9E7'];
+  const color = colors[Math.floor(Math.random() * colors.length)];
+  const newNote = {
+    avatar: initial, avatarBg: color, avatarColor: '#3B5838',
+    author: `${lang==='es'?'Tú':'Toi'} · ${city}`,
+    location: `${city}, ${region}`, date,
+    text: { fr: text, es: text },
+    tag: `${selectedRegion || region}`
+  };
+  PLANT.communityNotes.unshift(newNote);
+  document.getElementById('formNote').value = '';
+  document.getElementById('formCity').value = '';
+  document.getElementById('formRegion').value = '';
+  document.querySelectorAll('.region-chip').forEach(b => b.classList.remove('on'));
+  renderCommunity();
+  observeReveal();
+  showToast(txt('toastNote'));
+}
+
+// ─── SAVE PLANT ──────────────────────────────────
+let saved = false;
+function savePlant() {
+  saved = !saved;
+  const btn = document.getElementById('btnSave');
+  const icon = btn.querySelector('.nav-action-icon');
+  if (saved) {
+    icon.textContent = '♥';
+    btn.style.color = 'var(--rust)';
+    showToast(txt('toastSaved'));
+  } else {
+    icon.textContent = '♡';
+    btn.style.color = '';
+  }
+}
+
+// ─── TOAST ───────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), 2400);
+}
+
+// ─── INTERSECTION OBSERVER ───────────────────────
+function observeReveal() {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          entry.target.classList.add('visible');
+          // Animate bars if inside nutrition
+          if (entry.target.querySelector?.('.micro-fill') || entry.target.classList.contains('micro-row')) {
+            animateBars();
+          }
+        }, i * 60);
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal, .stage').forEach(el => obs.observe(el));
+  // Also trigger bar animations when nutrition section visible
+  const nutriObs = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) { animateBars(); nutriObs.disconnect(); }
+  }, { threshold: .1 });
+  const ns = document.getElementById('nutritionSection');
+  if (ns) nutriObs.observe(ns);
+}
+
+// ─── INIT ────────────────────────────────────────
+applyLang();
+observeReveal();
+*/
+
+/* ════════════════════════════════════════════════════
+   NUEVA IMPLEMENTACIÓN — dinámica desde plants.js
+═════════════════════════════════════════════════════ */
+
+/* Traducciones migradas a i18n.js bajo el namespace `plante`.
+   Nav y acciones comunes vienen de nav.* / actions.* / common.* */
+function S(k, params) {
+  // Nav / acciones cruzadas
+  if (k === 'nlHoy')     return I18n.t('nav.today');
+  if (k === 'nlJardin')  return I18n.t('nav.garden');
+  if (k === 'nlPlantas') return I18n.t('nav.plants');
+  if (k === 'ftHome')    return I18n.t('nav.today');
+  if (k === 'ftJardin')  return I18n.t('nav.garden');
+  if (k === 'ftPlants')  return I18n.t('nav.plants');
+  if (k === 'days')      return I18n.t('common.days');
+  if (k === 'day')       return I18n.t('common.day');
+  return I18n.t('plante.' + k, params);
+}
+
+/* ─── Util: rango de meses desde mask [0,0,1,1,0,...] ──── */
+function monthRangeFromMask(mask) {
+  if (!mask) return '—';
+  const months = MONTHS[lang];
+  const active = mask.map((v, i) => v ? i : -1).filter(i => i >= 0);
+  if (!active.length) return '—';
+  // Detectar rangos contiguos (incluyendo wrap dic→ene)
+  // Simplificado: tomar primer y último; si hay wrap, formatear bien
+  if (active.length === 1) return months[active[0]];
+  // wrap case
+  if (active.includes(0) && active.includes(11) && !active.includes(5)) {
+    // probable wrap: ej. Dic, Ene, Feb
+    const first = active.filter(i => i >= 6).sort()[0];
+    const last  = active.filter(i => i <= 5).sort().reverse()[0];
+    return `${months[first]}–${months[last]}`;
+  }
+  return `${months[active[0]]}–${months[active[active.length-1]]}`;
+}
+
+/* ─── Util: seed mask = harvM desplazado o el propio harvM */
+function seedsMaskFromHarv(harvM) {
+  // Asumimos que las semillas se recolectan en la última parte de la cosecha.
+  // Tomamos los dos últimos meses activos de harvM.
+  const seeds = new Array(12).fill(0);
+  const active = (harvM || []).map((v, i) => v ? i : -1).filter(i => i >= 0);
+  if (!active.length) return seeds;
+  const lastTwo = active.slice(-2);
+  lastTwo.forEach(i => { seeds[i] = 1; });
+  return seeds;
+}
+
+/* ─── Util: extraer años de viabilidad del texto de storage */
+function extractViability(storageText) {
+  if (!storageText) return null;
+  const m = storageText.match(/(\d+)\s*[–-]\s*(\d+)\s*años?/i) ||
+            storageText.match(/(\d+)\s*años?/i) ||
+            storageText.match(/(\d+)\s*[–-]\s*(\d+)\s*ans?/i) ||
+            storageText.match(/(\d+)\s*ans?/i);
+  if (!m) return null;
+  const yearWord = I18n.getLang() === 'fr' ? 'ans' : 'años';
+  return m[2] ? `${m[1]}–${m[2]} ${yearWord}` : `${m[1]} ${yearWord}`;
+}
+
+/* ─── Badge contextual del hero según mes actual ──────── */
+function contextualBadge() {
+  if (PLANT.sowM?.[currentMonth])   return { txt: S('sb_sow'),    cls:'sb_sow' };
+  if (PLANT.plantM?.[currentMonth]) return { txt: S('sb_plant'),  cls:'sb_plant' };
+  if (PLANT.harvM?.[currentMonth])  return { txt: S('sb_harv'),   cls:'sb_harv' };
+  return { txt: S('sb_resting'), cls:'sb_resting' };
+}
+
+/* ─── Hero / cabecera ─────────────────────────────────── */
+function renderHero() {
+  const name = t(PLANT.name);
+  const category = CATEGORIES[PLANT.category];
+  const categoryLabel = category ? t(category) : '';
+  // El subtítulo bajo el nombre: variedad patrimonial si existe, si no la familia, si no la categoría
+  const subLabel = PLANT.heritage
+    ? S('heritageBadge')
+    : (t(PLANT.family) || categoryLabel || '');
+
+  // Título de la página (la nav global no muestra la planta actual — ya está en el hero)
+  document.title = `Verdésia — ${name}${PLANT.latin ? ' · ' + PLANT.latin : ''}`;
+
+  // Strip estacional contextual
+  const season = Garden.getCurrentSeason();
+  const seasonNames = { es:{spring:'Primavera',summer:'Verano',autumn:'Otoño',winter:'Invierno'},
+                        fr:{spring:'Printemps',summer:'Été',autumn:'Automne',winter:'Hiver'} };
+  const seasonMonths = { spring:'Sep–Nov', summer:'Dic–Feb', autumn:'Mar–May', winter:'Jun–Ago' };
+  document.getElementById('heroSeason').textContent =
+    `${seasonNames[lang][season]} · ${seasonMonths[season]} · ${Storage.getZone()||'Santiago'}`;
+
+  const badge = contextualBadge();
+  document.getElementById('heroBadge').textContent = badge.txt;
+
+  // Nombre + subtítulo
+  document.getElementById('heroName').innerHTML =
+    `${name}${subLabel ? `<em>${subLabel}</em>` : ''}`;
+  document.getElementById('heroLatin').textContent = PLANT.latin || '';
+
+  const RARITY_LABELS = { tradicional:'Tradicional', patrimonial:'Patrimonial', raro:'Raro' };
+  document.getElementById('heroRarity').textContent = RARITY_LABELS[PLANT.rarity] || '';
+
+  // Descripción: clima Chile (si existe), si no fallback genérico desde categoría
+  const climate = t(PLANT.climate);
+  const fallbackDesc = I18n.getLang() === 'fr'
+    ? `${categoryLabel ? categoryLabel.toLowerCase() : 'plante'} du jardin chilien.`
+    : `${categoryLabel ? categoryLabel.toLowerCase() : 'planta'} del huerto chileno.`;
+  const desc = climate || fallbackDesc;
+  const heroDesc = document.getElementById('heroDesc');
+  heroDesc.innerHTML = desc;
+  heroDesc.style.display = desc ? '' : 'none';
+
+  // Vitales (todos por id, no querySelectorAll)
+  document.getElementById('vl1').textContent = S('vl1');
+  document.getElementById('vv1').textContent = t(PLANT.height) || '—';
+  document.getElementById('vs1').textContent = S('vs1');
+
+  document.getElementById('vl2').textContent = S('vl2');
+  document.getElementById('vv2').textContent =
+    PLANT.growth_days ? `${PLANT.growth_days} ${S('days')}` : '—';
+  document.getElementById('vs2').textContent = S('vs2');
+
+  document.getElementById('vl3').textContent = S('vl3');
+  document.getElementById('vv3').textContent = PLANT.spacing_cm ? `${PLANT.spacing_cm} cm` : '—';
+  document.getElementById('vs3').textContent = S('vs3');
+
+  document.getElementById('vl4').textContent = S('vl4');
+  document.getElementById('vv4').textContent = t(PLANT.water) || '—';
+  document.getElementById('vs4').textContent = t(PLANT.water_note) || S('vs4');
+
+  // Emoji grande
+  document.getElementById('plantHeroEm').textContent = PLANT.emoji || '🌱';
+
+  // Foto de fondo del hero (mejora progresiva; cae al verde musgo si falla)
+  if (PLANT.photo) {
+    const heroRight = document.querySelector('.hero-right');
+    const probe = new Image();
+    probe.onload = () => {
+      heroRight.style.setProperty('--plant-photo', `url('${PLANT.photo}')`);
+      heroRight.classList.add('has-photo');
+    };
+    probe.src = PLANT.photo;
+  }
+
+  // Strip de datos (esquina inferior derecha)
+  // Mostramos la región del USUARIO (no PLANT.zones[0], que sería la primera
+  // región compatible de la planta — frecuentemente engañosa, ej. mostraba
+  // "Coquimbo" para tomate_limache en cualquier región).
+  const userRegion = (window.SemencaRegions && SemencaRegions.getCurrentZoneDisplay())
+                  || (Storage.getZone() || S('defaultZoneLabel'));
+  document.getElementById('hdsZone').textContent = userRegion;
+  document.getElementById('hdsZoneLbl').textContent = S('hdsZoneLbl');
+  document.getElementById('hdsSunVal').innerHTML = `☀️ ${t(PLANT.sun) || '—'}`;
+  document.getElementById('hdsSun').textContent = S('hdsSun');
+  document.getElementById('hdsHarv').textContent = monthRangeFromMask(PLANT.harvM);
+  document.getElementById('hdsHarvLbl').textContent = S('hdsHarvLbl');
+
+  document.getElementById('scrollCueTxt').textContent = S('scrollCueTxt');
+}
+
+/* ─── Calendario 12 meses ─────────────────────────────── */
+function renderCalendar() {
+  const months = MONTHS[lang];
+  document.getElementById('calMonths').innerHTML =
+    months.map(m => `<div class="cml">${m}</div>`).join('');
+
+  document.getElementById('rowSow').textContent   = S('rowSow');
+  document.getElementById('rowPlant').textContent = S('rowPlant');
+  document.getElementById('rowHarv').textContent  = S('rowHarv');
+  document.getElementById('rowSeeds').textContent = S('rowSeeds');
+  document.getElementById('legSow').textContent   = S('legSow');
+  document.getElementById('legPlant').textContent = S('legPlant');
+  document.getElementById('legHarv').textContent  = S('legHarv');
+  document.getElementById('legSeeds').textContent = S('legSeeds');
+
+  const seedsM = seedsMaskFromHarv(PLANT.harvM);
+  const rows = [
+    ['calSow',   PLANT.sowM   || [], 'active-sow'],
+    ['calPlant', PLANT.plantM || [], 'active-plant'],
+    ['calHarv',  PLANT.harvM  || [], 'active-harv'],
+    ['calSeeds', seedsM,             'active-seeds'],
+  ];
+  rows.forEach(([id, arr, cls]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = Array.from({length:12}, (_, i) => {
+      const v = arr[i] || 0;
+      const isCurrent = (i === currentMonth);
+      return `<div class="cal-bar${v ? ' '+cls : ''}${isCurrent ? ' current-month' : ''}" title="${months[i]}"></div>`;
+    }).join('');
+  });
+
+  // Si no hay datos mensuales para nada, ocultar toda la sección del calendario
+  const hasAnyMonthData =
+    (PLANT.sowM   && PLANT.sowM.some(v=>v)) ||
+    (PLANT.plantM && PLANT.plantM.some(v=>v)) ||
+    (PLANT.harvM  && PLANT.harvM.some(v=>v));
+  document.getElementById('calSection').style.display = hasAnyMonthData ? '' : 'none';
+
+  // Callout — solo se muestra si hay texto de clima
+  const climate = t(PLANT.climate);
+  const callout = document.getElementById('calCallout');
+  if (climate) {
+    callout.style.display = '';
+    // Etiqueta calma de idoneidad para la región del usuario (no
+    // "user_zone · plant.zones[0]" que mezclaba dos cosas distintas).
+    // Si el motor regional no está disponible o la planta no tiene zones,
+    // caemos al nombre de la región del usuario.
+    const suit = (window.SemencaRegions && SemencaRegions.plantSuitability(PLANT)) || null;
+    const SUIT_LABELS = {
+      good:      'Apta en tu región',
+      marginal:  'Posible con cuidado',
+      difficult: 'Mejor con protección',
+    };
+    const userZone = (window.SemencaRegions && SemencaRegions.getCurrentZoneDisplay())
+                  || (Storage.getZone() || 'Santiago');
+    document.getElementById('ccTitle').textContent = SUIT_LABELS[suit] || userZone;
+    // Anexa la nota regional (que sí nombra la región del usuario).
+    const regionalNote = (window.SemencaRegions && SemencaRegions.plantRegionalNote(PLANT)) || '';
+    const noteHtml = regionalNote
+      ? ` <em style="color:var(--sage);font-style:italic">${regionalNote}</em>`
+      : '';
+    document.getElementById('ccText').innerHTML = climate + noteHtml;
+  } else {
+    callout.style.display = 'none';
+  }
+}
+
+/* ─── Etapas de crecimiento ──────────────────────────── */
+function renderStages() {
+  const tl = document.getElementById('stagesTimeline');
+  tl.innerHTML = '';
+  if (!PLANT.stages || !PLANT.stages.length) {
+    document.getElementById('stagesSection').style.display = 'none';
+    return;
+  }
+  document.getElementById('stagesSection').style.display = '';
+  let cum = 0;
+  PLANT.stages.forEach((st, i) => {
+    const start = cum;
+    cum += st.days || 0;
+    const end = cum;
+    const tips = tArr(PLANT.advice?.[i]);
+    const lead = tips.shift() || '';
+    const stageName = t(st.name);
+    const div = document.createElement('div');
+    div.className = 'stage reveal';
+    div.style.transitionDelay = `${i * .1}s`;
+    div.innerHTML = `
+      <div class="stage-num-col">
+        <div class="stage-circle" style="background:${st.color||'#f0f0f0'}">
+          ${st.icon || '●'}
+        </div>
+      </div>
+      <div class="stage-body">
+        <div class="stage-meta">
+          <div class="stage-name">${stageName}</div>
+          <div class="stage-timing">${I18n.getLang()==='fr'?'J':'D'}${start} → ${I18n.getLang()==='fr'?'J':'D'}${end}</div>
+        </div>
+        ${lead ? `<p class="stage-desc">${lead}</p>` : ''}
+        ${tips.length ? `<div class="stage-tips">
+          ${tips.map(tip => `<div class="stage-tip"><span class="tip-arrow">→</span><span>${tip}</span></div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    tl.appendChild(div);
+  });
+}
+
+/* ─── Plantas compañeras / a evitar ──────────────────── */
+function renderCompanions() {
+  // Resolver IDs a { id, emoji, name, linkable } (catálogo completo o externo)
+  const goodResolved = (PLANT.companions || []).map(id => Garden.resolveCompanion(id)).filter(Boolean);
+  const badResolved  = (PLANT.avoid      || []).map(id => Garden.resolveCompanion(id)).filter(Boolean);
+
+  // Si ambas listas están vacías, ocultar toda la sección
+  if (!goodResolved.length && !badResolved.length) {
+    document.getElementById('companionsSection').style.display = 'none';
+    return;
+  }
+  document.getElementById('companionsSection').style.display = '';
+  document.getElementById('cgGood').textContent = S('cgGood');
+  document.getElementById('cgBad').textContent  = S('cgBad');
+
+  function renderList(targetEl, plants, type, badge) {
+    const groupContainer = targetEl.parentElement;
+    if (!plants.length) {
+      groupContainer.style.display = 'none';
+      return;
+    }
+    groupContainer.style.display = '';
+    targetEl.innerHTML = plants.map(p => {
+      const why = type === 'good' ? S('compGoodWhy') : S('compBadWhy');
+      const inner = `
+        <div class="ci-em">${p.emoji}</div>
+        <div class="ci-info">
+          <div class="ci-name">${t(p.name)}</div>
+          <div class="ci-why">${why}</div>
+        </div>
+        <span class="ci-badge ${type}">${badge}</span>`;
+      return p.linkable
+        ? `<a class="companion-item" href="verdesia_plante.html?id=${p.id}" style="text-decoration:none;color:inherit">${inner}</a>`
+        : `<div class="companion-item" title="${S('compNoSheet')}" style="opacity:.85">${inner}</div>`;
+    }).join('');
+  }
+
+  renderList(document.getElementById('listGood'), goodResolved, 'good', S('compBadgeGood'));
+  renderList(document.getElementById('listBad'),  badResolved,  'bad',  S('compBadgeBad'));
+}
+
+/* ─── Usos y beneficios (sustituye nutrición) ────────── */
+function renderBenefits() {
+  const el = document.getElementById('benefitsList');
+  const uses = PLANT.uses || {};
+  const items = [];
+  if (uses.culinary)    items.push({ icon:'🍴', bg:'rgba(181,90,40,.1)',   name:S('intro_use_culinary'), text:t(uses.culinary) });
+  if (uses.nutritional) items.push({ icon:'🌿', bg:'rgba(59,88,56,.08)',   name:S('intro_use_nutri'),    text:t(uses.nutritional) });
+  if (uses.medicinal)   items.push({ icon:'💚', bg:'rgba(120,160,124,.12)', name:S('intro_use_medic'),    text:t(uses.medicinal) });
+
+  if (!items.length) {
+    el.innerHTML = `<p style="font-size:13px;color:var(--sage-lt);font-weight:300">—</p>`;
+    document.getElementById('nutritionSection').style.display = 'none';
+    return;
+  }
+  el.innerHTML = items.map(b => `
+    <div class="benefit reveal">
+      <div class="benefit-icon" style="background:${b.bg}">${b.icon}</div>
+      <div>
+        <div class="benefit-title">${b.name}</div>
+        <div class="benefit-text">${b.text}</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ─── Recolección de semillas ────────────────────────── */
+function renderSeedSteps() {
+  const el = document.getElementById('seedSteps');
+  const seeds = PLANT.seeds;
+  // Sin info de semillas → ocultar toda la sección
+  if (!seeds || (!seeds.when && !seeds.how && !seeds.drying && !seeds.storage)) {
+    document.getElementById('seedsSection').style.display = 'none';
+    return;
+  }
+  document.getElementById('seedsSection').style.display = '';
+
+  const sowText = t(PLANT.sow);
+  document.getElementById('seedsIntro').textContent = t(seeds.notes) ||
+    S('seedDefaultIntro', { plant: t(PLANT.name).toLowerCase() });
+
+  // Viabilidad → mostrar badge solo si se puede extraer
+  const viab = extractViability(t(seeds.storage));
+  const lifeBox = document.getElementById('seedLifeBox');
+  if (viab) {
+    lifeBox.style.display = '';
+    document.getElementById('seedLife').textContent    = viab;
+    document.getElementById('seedLifeLbl').textContent = S('seedLifeLbl');
+  } else {
+    lifeBox.style.display = 'none';
+  }
+
+  const steps = [];
+  if (seeds.when)    steps.push({ title:S('seed_when'),    desc:t(seeds.when),    tag:sowText||'' });
+  if (seeds.how)     steps.push({ title:S('seed_how'),     desc:t(seeds.how),     tag:'' });
+  if (seeds.drying)  steps.push({ title:S('seed_drying'),  desc:t(seeds.drying),  tag:'' });
+  if (seeds.storage) steps.push({ title:S('seed_storage'), desc:t(seeds.storage), tag:viab||'' });
+
+  el.innerHTML = steps.map((s, i) => `
+    <div class="seed-step reveal">
+      <div class="step-num">${i+1}</div>
+      <div>
+        <div class="step-title">${s.title}</div>
+        <div class="step-desc">${s.desc}</div>
+        ${s.tag ? `<span class="step-tag">${s.tag}</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+/* ─── Problemas frecuentes ──────────────────────────── */
+function renderProblems() {
+  const el = document.getElementById('problemsGrid');
+  const list = PLANT.problems || [];
+  if (!list.length) {
+    document.getElementById('problemsSection').style.display = 'none';
+    return;
+  }
+  const icons = ['🍃','💧','🐛','🌧','🍂','🦟'];
+  el.innerHTML = list.map((p, i) => {
+    const raw = t(p) || '';
+    // Separar nombre y remedio en el primer " — " o " – "
+    const split = raw.split(/\s[—–]\s/);
+    const name   = split[0] || raw;
+    const remedy = split.slice(1).join(' — ');
+    return `
+      <div class="problem-card reveal">
+        <span class="problem-icon">${icons[i % icons.length]}</span>
+        <div class="problem-name">${name}</div>
+        ${remedy ? `<div class="problem-remedy">
+          <span style="color:var(--moss);font-size:12px">→</span>
+          <span>${remedy}</span>
+        </div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+/* ─── Diario: notas del usuario para esta planta ─────── */
+function getMyEntriesForPlant() {
+  const garden = Storage.loadGarden();
+  return garden
+    .map((entry, idx) => ({ entry, idx }))
+    .filter(o => o.entry.plantId === PLANT.id);
+}
+
+function renderMyNotes() {
+  const list = document.getElementById('notesList');
+  if (!list) return; // diario section removed in simplification sprint — dormant no-op
+  document.getElementById('formTitle').textContent = S('formTitle');
+  document.getElementById('formSub').textContent = S('formSub');
+  document.getElementById('formLabelType').textContent = S('formLabelType');
+  document.getElementById('formLabelNote').textContent = S('formLabelNote');
+  document.getElementById('formNote').placeholder = S('formNotePh');
+  document.getElementById('formSubmit').textContent = S('formSubmit');
+
+  // Localizar opciones del select
+  const sel = document.getElementById('formNoteType');
+  Array.from(sel.options).forEach(opt => {
+    opt.textContent = NOTE_TYPES[opt.value]?.[lang] || opt.value;
+  });
+
+  const entries = getMyEntriesForPlant();
+  const allNotes = [];
+  entries.forEach(({entry, idx}) => {
+    (entry.notes || []).forEach(n => allNotes.push({ ...n, plantIndex: idx, zone: entry.zone }));
+  });
+  allNotes.sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0));
+
+  if (!allNotes.length) {
+    list.innerHTML = `<div style="background:var(--white);border:1px dashed rgba(44,30,18,.1);border-radius:10px;padding:32px 24px;text-align:center;color:var(--sage-lt);font-size:13.5px;line-height:1.7;font-weight:300">
+      ${entries.length ? S('notesEmpty') : S('notInGardenYet')}
+    </div>`;
+    return;
+  }
+
+  const colors = { obs:'#E8F5E9', sow:'#FFF8E6', harv:'#FBE9E7', prob:'#FBE9E7', tip:'#E3F2FD', photo:'#E0F7FA' };
+  list.innerHTML = allNotes.map(n => {
+    const typeMeta = NOTE_TYPES[n.type] || NOTE_TYPES.obs;
+    return `
+    <div class="note-card reveal">
+      <div class="note-top">
+        <div class="note-avatar" style="background:${colors[n.type]||'#E8F5E9'};color:${typeMeta.color}">
+          ${PLANT.emoji}
+        </div>
+        <div>
+          <div class="note-author">${I18n.getLocalized(typeMeta)}</div>
+          <div class="note-location">${n.zone || ''}</div>
+        </div>
+        <div class="note-date">${n.date}</div>
+      </div>
+      <div class="note-text">${n.text}</div>
+    </div>`;
+  }).join('');
+}
+
+function submitNote() {
+  const noteEl = document.getElementById('formNote');
+  if (!noteEl) return; // diario section removed — dormant no-op
+  const text = noteEl.value.trim();
+  if (!text) return;
+  const type = document.getElementById('formNoteType').value;
+
+  const entries = getMyEntriesForPlant();
+  if (!entries.length) {
+    // No está en el jardín — añadir y crear nota
+    // Zona y fecha local se resuelven automáticamente en Garden.addPlant.
+    Garden.addPlant(PLANT.id);
+    showToast(S('toastAdded'));
+  }
+  const target = getMyEntriesForPlant()[0];
+  Garden.addNote(target.idx, text, type);
+  document.getElementById('formNote').value = '';
+  renderMyNotes();
+  refreshAddButton();
+  showToast(S('toastNote'));
+}
+
+/* ─── Botón añadir al jardín ─────────────────────────── */
+function refreshAddButton() {
+  const btn = document.getElementById('btnSave');
+  const icon = btn.querySelector('.nav-action-icon');
+  const lbl  = document.getElementById('btnSaveLbl');
+  const inGarden = getMyEntriesForPlant().length > 0;
+  if (inGarden) {
+    icon.textContent = '✓';
+    lbl.textContent  = S('btnInGarden');
+    btn.style.color  = 'var(--moss)';
+  } else {
+    icon.textContent = '＋';
+    lbl.textContent  = S('btnSaveLbl');
+    btn.style.color  = '';
+  }
+}
+
+function addToGarden() {
+  if (getMyEntriesForPlant().length > 0) {
+    // Ya está → ir al jardín
+    showToast(S('toastInGarden'));
+    setTimeout(() => { window.location = 'verdesia_jardin.html'; }, 700);
+    return;
+  }
+  // Zona y fecha local resueltas automáticamente en Garden.addPlant.
+  Garden.addPlant(PLANT.id);
+  refreshAddButton();
+  renderMyNotes();
+  showToast(S('toastAdded'));
+}
+
+/* ─── Idioma ─────────────────────────────────────────── */
+function setLang(l) {
+  I18n.setLang(l); // dispara onChange → applyLang
+}
+I18n.onChange(() => applyLang());
+// Re-render cuando el usuario cambia de región (afecta la nota regional del callout clima)
+window.addEventListener('semenca:zonechange', () => applyLang());
+// Re-render cuando el jardín se modifica desde otra parte (sincroniza el botón "Agregar")
+window.addEventListener('semenca:gardenchange', () => { try { refreshAddButton(); } catch(e){} });
+
+function applyLang() {
+  document.documentElement.lang = I18n.getLang();
+
+  // Textos estáticos
+  ['nlHoy','nlJardin','nlPlantas','heroBackTxt','calEyebrow','stagesEyebrow','companionsEyebrow',
+   'nutriEyebrow','seedsEyebrow','problemsEyebrow','communityEyebrow',
+   'ftHome','ftJardin','ftPlants'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = S(id);
+  });
+
+  // Títulos con <em>
+  ['calTitle','stagesTitle','companionsTitle','nutriTitle',
+   'seedsTitle','problemsTitle','communityTitle'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = S(id);
+  });
+
+  // Toggle on/off de los botones de idioma
+  document.querySelectorAll('.lb').forEach(b =>
+    b.classList.toggle('on', b.textContent === lang.toUpperCase()));
+
+  // Re-render dinámico
+  renderHero();
+  renderCalendar();
+  renderStages();
+  renderCompanions();
+  renderBenefits();
+  renderSeedSteps();
+  renderProblems();
+  renderMyNotes();
+  refreshAddButton();
+  observeReveal();
+}
+
+/* ─── Toast ──────────────────────────────────────────── */
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), 2400);
+}
+
+/* ─── Reveal on scroll ──────────────────────────────── */
+function observeReveal() {
+  if (!('IntersectionObserver' in window)) {
+    document.querySelectorAll('.fade-up, .reveal, .stage')
+      .forEach(el => el.classList.add('visible'));
+    return;
+  }
+  const els = document.querySelectorAll('.reveal:not(.visible), .stage:not(.visible)');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 50);
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  els.forEach(el => obs.observe(el));
+}
+
+/* ─── Init ──────────────────────────────────────────── */
+applyLang();
+SemencaOnboarding.bootstrap();
+</script>
+<script>
+/* PWA: register service worker (silent, defensive) */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

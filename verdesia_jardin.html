@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#3B5838">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Verdésia">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180-apple.png">
+<title>Verdésia — Mi jardín</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════ */
+:root {
+  --soil:   #2A1E12;
+  --bark:   #4A3626;
+  --bark-lt:#7A6248;
+  --moss:   #3B5838;
+  --moss-lt:#4D7050;
+  --sage:   #78A07C;
+  --sage-lt:#A9C8AD;
+  --straw:  #E6D7B0;
+  --cream:  #F4EFE5;
+  --parch:  #EDE6D8;
+  --rust:   #B55A28;
+  --sun:    #C8A03A;
+  --white:  #FDFAF2;
+  --font-d: 'Playfair Display', Georgia, serif;
+  --font-b: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-m: 'DM Mono', monospace;
+  --ease:   cubic-bezier(.16,1,.3,1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--white);
+  color: var(--soil);
+  font-family: var(--font-b);
+  font-size: 15.5px; line-height: 1.7;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+  opacity: .55;
+}
+
+/* ═══════════════════════════════════════ NAV ═══════════════════════════════════════ */
+.nav {
+  position: sticky; top: 0; z-index: 400;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px; height: 72px;
+  background: rgba(253,250,242,.93);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(42,30,18,.06);
+}
+.nav-logo {
+  font-family: var(--font-d); font-size: 22px;
+  color: var(--soil); text-decoration: none;
+  position: relative; line-height: 1.1;
+}
+.nav-logo em { color: var(--moss); font-style: italic; }
+.nav-logo::after {
+  content: 'Cultiva tu autonomía';
+  position: absolute; top: 100%; left: 0; margin-top: 6px;
+  font-family: var(--font-d); font-size: 12.5px;
+  color: var(--moss-lt); font-style: italic;
+  font-weight: 400; letter-spacing: .15px;
+  white-space: nowrap; pointer-events: none;
+}
+@media (max-width: 380px) { .nav-logo::after { display: none; } }
+.nav-links {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 28px; align-items: center;
+}
+.nav-link {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  text-decoration: none; transition: color .18s;
+  padding-bottom: 2px; border-bottom: 1px solid transparent;
+}
+.nav-link.active { color: var(--soil); border-bottom-color: var(--moss); }
+.nav-link:hover  { color: var(--bark); }
+.nav-r { display: flex; align-items: center; gap: 14px; }
+
+/* ═══════════════════════════════════════ PAGE HEADER ═══════════════════════════════════════ */
+.page-head {
+  padding: 36px 40px 24px;
+  border-bottom: 1px solid rgba(42,30,18,.06);
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 24px; align-items: end;
+}
+.page-eyebrow {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.page-title {
+  font-family: var(--font-d);
+  font-size: clamp(28px, 4vw, 42px);
+  color: var(--soil); line-height: 1.05; letter-spacing: -.6px;
+}
+.page-title em { color: var(--moss); font-style: italic; }
+.page-sub { font-size: 13.5px; color: var(--bark-lt); font-weight: 300; margin-top: 6px; max-width: 460px; }
+.page-actions { display: flex; align-items: center; gap: 14px; }
+.count-pill {
+  font-family: var(--font-m); font-size: 11px;
+  color: var(--sage); letter-spacing: 1.2px; text-transform: uppercase;
+  padding: 6px 12px; background: var(--parch);
+  border: 1px solid rgba(42,30,18,.06); border-radius: 100px;
+}
+.add-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 20px; border-radius: 100px;
+  background: var(--moss); color: var(--white);
+  font-family: var(--font-b); font-size: 13px; font-weight: 500;
+  border: none; cursor: pointer; transition: background .18s, transform .15s;
+  min-height: 44px;
+}
+.add-btn:hover { background: var(--soil); transform: translateY(-1px); }
+.add-btn .plus { font-size: 18px; font-weight: 300; line-height: 1; }
+
+/* ═══════════════════════════════════════ GARDEN GRID ═══════════════════════════════════════ */
+.garden-wrap {
+  padding: 36px 40px 80px;
+  max-width: 1180px; margin: 0 auto;
+  /* Le wrap autorise l'overflow horizontal pour la variante premium 15×15
+     sur les écrans étroits — on garde la métaphore "parcela vista desde
+     arriba" plutôt que d'écraser la géométrie. En free 4×4 la grille
+     reste naturellement étroite et centrée (max-content). */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+/* Indication visuelle subtile que la grille s'étend horizontalement —
+   uniquement quand la grille pleine (premium) déborde sur mobile.
+   Pas un overlay agressif : un dégradé doux sur la bordure droite,
+   indiquant qu'il y a "plus à voir" en glissant. */
+@media (max-width: 900px) {
+  .garden-wrap:has(.garden-grid--full)::after {
+    content: '';
+    position: sticky;
+    right: 0; top: 0; bottom: 0;
+    float: right;
+    width: 32px; height: 100%;
+    margin-left: -32px;
+    background: linear-gradient(to left, rgba(253,250,242,.85), rgba(253,250,242,0));
+    pointer-events: none;
+  }
+  .garden-grid--full {
+    /* Petit hint texte au-dessus de la grille premium en mobile, calme. */
+    position: relative;
+  }
+  .garden-grid--full::before {
+    content: '← Desliza para ver tu huerto completo →';
+    position: absolute;
+    top: -20px; left: 0; right: 0;
+    text-align: center;
+    font-family: var(--font-m); font-size: 9.5px;
+    color: var(--sage-lt); letter-spacing: 1.3px; text-transform: uppercase;
+    pointer-events: none;
+  }
+}
+.garden-grid {
+  display: grid;
+  gap: 10px;
+  margin: 0 auto;
+}
+/* Variante compacte — tier free (4×4).
+   Cellules plafonnées à 92px : un petit jardin lisible, centré dans la
+   page, jamais étiré sur tout l'écran. minmax(0, 92px) permet le shrink
+   propre sur mobile sans déborder. */
+.garden-grid--compact {
+  grid-template-columns: repeat(var(--garden-cols, 4), minmax(0, 92px));
+  width: max-content;
+  max-width: 100%;
+}
+/* Variante pleine — tier premium (15×15).
+   minmax(64px, 1fr) remplit le wrap (max ~1180px) en desktop, scroll
+   horizontalement en mobile via .garden-wrap. */
+.garden-grid--full {
+  grid-template-columns: repeat(var(--garden-cols, 15), minmax(64px, 1fr));
+  width: 100%;
+  min-width: 0;
+}
+.cell {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: var(--parch);
+  border: 1px solid rgba(42,30,18,.08);
+  border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .18s, border-color .18s, transform .12s;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+}
+.cell.empty {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(122,98,72,.06), transparent 60%),
+    var(--parch);
+}
+.cell.empty:hover {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(59,88,56,.10), transparent 60%),
+    var(--parch);
+  border-color: rgba(59,88,56,.25);
+}
+.cell.empty::before {
+  content: '+';
+  font-family: var(--font-d); font-size: 22px; font-weight: 300;
+  color: var(--sage-lt); opacity: 0;
+  transition: opacity .18s;
+}
+.cell.empty:hover::before { opacity: 1; }
+.cell.occupied {
+  background: var(--white);
+  border-color: rgba(59,88,56,.18);
+  padding: 8px;
+}
+.cell.occupied:hover { transform: translateY(-1px); border-color: rgba(59,88,56,.45); }
+.cell.occupied.dragging { opacity: .35; }
+.cell.drag-over { background: rgba(59,88,56,.10); border-color: var(--moss); }
+
+/* Asociaciones de vecindad — tonos botánicos calmos, no alarmas.
+   Mala asociación: cobre/oxidado. Buena asociación: musgo verde.
+   La señal es visible pero contemplativa: la app sugiere, no advierte. */
+.cell.bad-neighbor {
+  background: rgba(181, 90, 40, .16);
+  border-color: rgba(181, 90, 40, .55);
+  box-shadow: inset 0 0 0 1px rgba(181, 90, 40, .28);
+}
+.cell.good-neighbor {
+  background: rgba(59, 88, 56, .14);
+  border-color: rgba(59, 88, 56, .45);
+  box-shadow: inset 0 0 0 1px rgba(59, 88, 56, .22);
+}
+/* Etiqueta discreta de asociación bajo la etapa. Sin iconos, sin badges
+   gritones — sólo una línea monoespaciada calma. */
+.association-label {
+  margin-top: 4px;
+  font-family: var(--font-m);
+  font-size: 8px;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+.cell.bad-neighbor  .association-label { color: var(--rust); }
+.cell.good-neighbor .association-label { color: var(--moss); }
+.cell-em {
+  font-size: clamp(22px, 4vw, 32px);
+  line-height: 1; margin-bottom: 4px;
+}
+.cell-photo {
+  width: 100%; height: 60%; object-fit: cover;
+  border-radius: 6px; margin-bottom: 4px;
+  display: block;
+}
+.cell-name {
+  font-family: var(--font-b); font-size: 12.5px; font-weight: 500;
+  color: var(--soil); line-height: 1.2;
+  text-align: center; padding: 0 4px;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 100%;
+}
+.cell-stage {
+  font-family: var(--font-m); font-size: 8.5px;
+  color: var(--sage); letter-spacing: .8px; text-transform: uppercase;
+  margin-top: 2px;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ─── Densification — cellules 15×15 (Premium) ──────────────
+   À 15 colonnes, les cellules font ~64-92px selon la viewport.
+   Le contenu par défaut (photo 60% + nom 12.5px + étape 8.5px +
+   association 8px) déborde et se fait tronquer. On condense
+   uniquement pour cette variante — le 4×4 free reste aéré.
+
+   Le nom de planta peut wrapper sur 2 lignes pour les noms longs
+   ("Girasol", "Damasco", "Aji verde"), ce qui évite l'ellipsis. */
+.garden-grid--full .cell.occupied {
+  padding: 5px;
+}
+.garden-grid--full .cell-photo {
+  height: 48%;
+  margin-bottom: 2px;
+}
+.garden-grid--full .cell-em {
+  font-size: clamp(16px, 2.8vw, 24px);
+  margin-bottom: 2px;
+}
+.garden-grid--full .cell-name {
+  font-size: 11px;
+  line-height: 1.15;
+  padding: 0 2px;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.garden-grid--full .cell-stage {
+  font-size: 7.5px;
+  letter-spacing: .5px;
+  margin-top: 1px;
+}
+.garden-grid--full .association-label {
+  /* En 15×15 le label éditorial complet ("Buena asociación" / "Mala
+     asociación") ne tient pas dans la hauteur de la cellule. On le
+     transforme en mini-badge overlay top-left avec un texte abrégé
+     ("BUENA" / "MALA") porté par data-short via ::before. Le texte
+     original (inline) est masqué via font-size: 0. */
+  position: absolute;
+  top: 3px; left: 3px;
+  margin: 0;
+  padding: 2px 5px;
+  border-radius: 6px;
+  background: rgba(253, 250, 242, .92);
+  font-size: 0; /* masque le texte inline original */
+  line-height: 1;
+  z-index: 2;
+  pointer-events: none;
+  max-width: calc(100% - 28px); /* laisse la place au cell-remove à droite */
+}
+.garden-grid--full .association-label::before {
+  content: attr(data-short);
+  font-family: var(--font-m);
+  font-size: 6.5px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.garden-grid--full .cell.bad-neighbor  .association-label { background: rgba(246, 233, 218, .94); }
+.garden-grid--full .cell.good-neighbor .association-label { background: rgba(227, 237, 220, .94); }
+.garden-grid--full .cell.bad-neighbor  .association-label::before { color: var(--rust); }
+.garden-grid--full .cell.good-neighbor .association-label::before { color: var(--moss); }
+.cell-remove {
+  position: absolute; top: 4px; right: 4px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(181,90,40,.85); color: white;
+  font-size: 11px; line-height: 1; border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0;
+  transition: opacity .15s;
+}
+
+/* ─── Stage transition dot (continuité émotionnelle) ──────────
+   Petit point sage dans le coin supérieur gauche d'une cellule
+   dont la planta vient d'entrer dans une nouvelle étape (< 7 jours).
+   Sans animation pulsante, sans alarme. Juste un signal calme :
+   le jardin a vécu pendant la semaine passée. */
+.stage-fresh-dot {
+  position: absolute; top: 6px; left: 6px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--moss);
+  opacity: .65;
+  pointer-events: none;
+  z-index: 2;
+}
+.cell.occupied:hover .cell-remove,
+.cell.occupied:focus-within .cell-remove { opacity: 1; }
+@media (hover: none) {
+  /* Sur tactile : zone tappable agrandie (32×32) + toujours visible avec
+     une opacité douce. Le glyphe ✕ garde sa taille (11px, centré flex). */
+  .cell-remove {
+    opacity: .85;
+    width: 32px; height: 32px;
+    top: 2px; right: 2px;
+  }
+}
+
+/* ─── Tap-to-move mobile ──────────────────────────────────────
+   Sur écrans tactiles (hover:none), HTML5 drag/drop ne se déclenche
+   pas depuis le doigt. On ajoute un système alternatif : tap une
+   plante → action sheet → choisir "Mover" → tap la destination.
+   Le drag desktop reste actif et inchangé.
+
+   .cell.move-source        : cellule sélectionnée (en attente de destination)
+   .garden-grid.move-active : indique au grid global qu'on est en mode déplacement */
+.cell.move-source {
+  box-shadow: inset 0 0 0 2px var(--moss);
+  background: rgba(59,88,56,.10);
+}
+.garden-grid.move-active .cell:not(.move-source) {
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.garden-grid.move-active .cell.empty:hover,
+.garden-grid.move-active .cell.empty:active {
+  background: rgba(59,88,56,.10);
+  border-color: rgba(59,88,56,.30);
+}
+
+/* Action sheet — bottom inline, simple, calme. Pas de modal-backdrop
+   pleine page (l'utilisateur peut toujours voir son jardin derrière).
+   Le tap ailleurs sur le grid ferme la sheet. */
+.action-sheet-backdrop {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(42,30,18,.18);
+  backdrop-filter: blur(2px);
+  display: none;
+  animation: fadeIn .18s ease-out;
+}
+.action-sheet-backdrop.open { display: block; }
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+.action-sheet {
+  position: fixed;
+  left: 50%; bottom: 18px;
+  transform: translateX(-50%);
+  width: 92%; max-width: 420px;
+  z-index: 901;
+  background: var(--white);
+  border: 1px solid rgba(42,30,18,.08);
+  border-radius: 16px;
+  padding: 16px 18px 18px;
+  box-shadow: 0 12px 36px rgba(42,30,18,.18);
+  font-family: var(--font-b);
+  display: none;
+  animation: sheetIn .22s var(--ease);
+  /* Safe area iOS */
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+.action-sheet.open { display: block; }
+@keyframes sheetIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.action-sheet-head {
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(42,30,18,.06);
+  margin-bottom: 8px;
+}
+.action-sheet-em { font-size: 22px; line-height: 1; }
+.action-sheet-title {
+  font-family: var(--font-d); font-size: 17px;
+  color: var(--soil); line-height: 1.2;
+}
+.action-sheet-sub {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 1.4px; text-transform: uppercase;
+  margin-top: 3px;
+}
+.action-sheet-btn {
+  display: block; width: 100%;
+  padding: 13px 14px; margin: 0;
+  background: transparent; border: none;
+  text-align: left;
+  font-family: var(--font-b); font-size: 14.5px; font-weight: 400;
+  color: var(--soil);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.action-sheet-btn:hover, .action-sheet-btn:active {
+  background: rgba(59,88,56,.07);
+}
+.action-sheet-btn--danger { color: var(--rust); }
+.action-sheet-btn--cancel {
+  font-family: var(--font-m); font-size: 10px;
+  letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--bark-lt);
+  text-align: center;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(42,30,18,.06);
+}
+
+/* Empty hint overlay when the entire garden is empty */
+.garden-empty-hint {
+  margin-top: 30px; text-align: center;
+  font-size: 13px; color: var(--sage-lt); font-weight: 300;
+}
+.beyond-visible-note {
+  margin-top: 22px; padding: 14px 18px;
+  text-align: center;
+  font-family: var(--font-d); font-style: italic;
+  color: var(--sage); font-size: 13.5px;
+  line-height: 1.55;
+  background: var(--parch);
+  border: 1px solid rgba(42,30,18,.06);
+  border-radius: 12px;
+  max-width: 560px;
+  margin-left: auto; margin-right: auto;
+}
+
+/* ─── Neighbor insight — observación espacial calma ───────────
+   1 phrase éditoriale sous la grille quand le système détecte
+   une association notable entre voisines. Pas un panel, pas une
+   liste, pas une alerte. Une observation douce. */
+.neighbor-insight {
+  margin: 22px auto 0;
+  max-width: 480px;
+  padding: 12px 18px;
+  text-align: center;
+  font-family: var(--font-d); font-style: italic;
+  font-size: 13.5px; line-height: 1.55;
+  color: var(--sage);
+  border-top: 1px solid rgba(42,30,18,.06);
+}
+.neighbor-insight--concern { color: var(--bark-lt); }
+
+/* ─── Invitation calma a Verdésia Plus (sólo tier free) ───────
+   Encartado editorial bajo la grilla 4×4 — propone, no impone. */
+.plus-invite {
+  margin-top: 32px;
+  text-align: center;
+  max-width: 480px;
+  margin-left: auto; margin-right: auto;
+  padding: 22px 24px 24px;
+  border-top: 1px solid rgba(42,30,18,.06);
+}
+.plus-invite-line {
+  font-family: var(--font-d); font-style: italic;
+  color: var(--bark-lt); font-size: 14.5px;
+  line-height: 1.55;
+  margin-bottom: 10px;
+}
+.plus-invite-link {
+  display: inline-block;
+  font-family: var(--font-m); font-size: 10px;
+  letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--moss); text-decoration: none;
+  /* Zone tappable mobile-friendly sans alourdir le glyph. */
+  padding: 10px 4px;
+  border-bottom: 1px solid rgba(59,88,56,.28);
+  transition: color .18s, border-color .18s;
+}
+.plus-invite-link:hover { color: var(--soil); border-bottom-color: var(--soil); }
+
+/* ═══════════════════════════════════════ MODAL — DATE ═══════════════════════════════════════ */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 800;
+  background: rgba(42,30,18,.45); backdrop-filter: blur(6px);
+  display: none; align-items: center; justify-content: center;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: var(--white); border-radius: 16px;
+  padding: 36px; max-width: 420px; width: 90%;
+  box-shadow: 0 24px 64px rgba(42,30,18,.2);
+  animation: modal-in .3s var(--ease) both;
+}
+@keyframes modal-in { from { opacity:0; transform:translateY(16px) scale(.97); } to { opacity:1; transform:none; } }
+.modal-title { font-family: var(--font-d); font-size: 22px; color: var(--soil); margin-bottom: 6px; }
+.modal-sub   { font-size: 13.5px; color: var(--bark-lt); font-weight: 300; margin-bottom: 24px; line-height: 1.7; }
+.form-label  { display: block; font-family: var(--font-m); font-size: 10px; color: var(--sage); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+.form-input  { width: 100%; padding: 10px 14px; border: 1px solid rgba(42,30,18,.16); border-radius: 8px; font-family: var(--font-b); font-size: 14px; color: var(--soil); background: var(--white); }
+.modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+.btn-prim {
+  flex: 1; padding: 11px 22px; border-radius: 100px;
+  background: var(--moss); color: var(--white);
+  font-family: var(--font-b); font-size: 14px; font-weight: 500;
+  border: none; cursor: pointer; transition: background .18s;
+}
+.btn-prim:hover { background: var(--soil); }
+.btn-sec {
+  padding: 11px 22px; border-radius: 100px;
+  background: transparent; color: var(--bark-lt);
+  font-family: var(--font-b); font-size: 14px;
+  border: 1px solid rgba(42,30,18,.14); cursor: pointer; transition: color .18s, border-color .18s;
+}
+.btn-sec:hover { color: var(--soil); border-color: rgba(42,30,18,.3); }
+
+/* ═══════════════════════════════════════ MODAL — PICKER ═══════════════════════════════════════ */
+.picker-backdrop {
+  position: fixed; inset: 0; z-index: 700;
+  background: rgba(42,30,18,.45); backdrop-filter: blur(6px);
+  display: none; align-items: stretch; justify-content: center;
+}
+.picker-backdrop.open { display: flex; }
+.picker {
+  background: var(--white); border-radius: 16px;
+  max-width: 680px; width: 92%; max-height: 84vh;
+  margin: auto;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 64px rgba(42,30,18,.2);
+  animation: modal-in .3s var(--ease) both;
+}
+.picker-head {
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid rgba(42,30,18,.06);
+}
+.picker-title { font-family: var(--font-d); font-size: 20px; color: var(--soil); margin-bottom: 4px; }
+.picker-sub   { font-size: 13px; color: var(--bark-lt); font-weight: 300; }
+.picker-search {
+  margin: 14px 0 0; display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border: 1px solid rgba(42,30,18,.14); border-radius: 100px;
+}
+.picker-search input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-family: var(--font-b); font-size: 14px; color: var(--soil);
+}
+.picker-body {
+  padding: 18px 24px 24px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  overflow-y: auto;
+}
+.pcard {
+  padding: 14px 10px; border-radius: 10px;
+  background: var(--parch); border: 1px solid rgba(42,30,18,.06);
+  text-align: center; cursor: pointer; transition: background .18s, transform .12s;
+}
+.pcard:hover { background: var(--white); border-color: rgba(59,88,56,.35); transform: translateY(-1px); }
+.pcard-em { font-size: 26px; line-height: 1; margin-bottom: 6px; }
+.pcard-name { font-family: var(--font-b); font-size: 13px; font-weight: 500; color: var(--soil); line-height: 1.25; }
+.pcard-lat  { font-family: var(--font-b); font-size: 10.5px; color: var(--sage); font-style: italic; margin-top: 2px; }
+.picker-foot {
+  padding: 12px 24px 18px; display: flex; justify-content: flex-end;
+}
+/* Pie del picker — invitación calma a Verdésia Plus (sólo tier free).
+   Estilo mono/sage, sin botón gritón. */
+.picker-plus-foot {
+  padding: 14px 24px 4px;
+  text-align: center;
+  border-top: 1px solid rgba(42,30,18,.06);
+}
+.picker-plus-link {
+  font-family: var(--font-m); font-size: 10px;
+  letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--moss); text-decoration: none;
+  padding: 4px 0; border-bottom: 1px solid rgba(59,88,56,.28);
+  transition: color .18s, border-color .18s;
+}
+.picker-plus-link:hover { color: var(--soil); border-bottom-color: var(--soil); }
+
+/* ═══════════════════════════════════════ TOAST ═══════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  background: rgba(42,30,18,.9); color: var(--straw);
+  padding: 9px 20px; border-radius: 100px; font-size: 13px;
+  font-family: var(--font-b); opacity: 0; transition: opacity .22s;
+  pointer-events: none; z-index: 9000; white-space: nowrap;
+}
+.toast.on { opacity: 1; }
+
+/* ═══════════════════════════════════════ RESPONSIVE ═══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .nav { padding: 0 18px; }
+  .nav-links { display: none; }
+  .page-head { padding: 28px 18px 18px; grid-template-columns: 1fr; }
+  .page-actions { justify-content: flex-start; }
+  /* Conservamos las 10 columnas reales (la grilla es un mapa físico,
+     no un dashboard responsivo). En pantallas estrechas, el contenedor
+     desplaza horizontalmente vía .garden-wrap { overflow-x: auto }. */
+  .garden-wrap { padding: 24px 18px 60px; }
+  .garden-grid { gap: 8px; }
+  .modal { padding: 28px 22px; }
+}
+@media (max-width: 480px) {
+  .cell-name { font-size: 11px; }
+  .cell-stage { font-size: 8px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Shared modules -->
+<script src="plants.js"></script>
+<script src="storage.js"></script>
+<!-- Façade régionale : DOIT être chargée avant regions.js + i18n.js -->
+<script src="verdesia_region_config.js"></script>
+<script src="verdesia_plan.js"></script>
+<script src="regions.js"></script>
+<script src="i18n.js"></script>
+<script src="garden.js"></script>
+<script src="onboarding.js"></script>
+<script src="verdesia_profile.js" defer></script>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="verdesia_landing.html" class="nav-logo">Verd<em>ésia</em></a>
+  <div class="nav-links">
+    <a class="nav-link" href="verdesia_today.html" id="nlHoy">Hoy</a>
+    <a class="nav-link active" href="verdesia_jardin.html" id="nlJardin">Mi jardín</a>
+    <a class="nav-link" href="verdesia_explorer.html" id="nlPlantas">Plantas</a>
+    <a class="nav-link" href="verdesia_brote.html" id="nlDiag">Lectura del huerto</a>
+    <a class="nav-link" href="verdesia_observaciones.html" id="nlMemoria">Memoria</a>
+  </div>
+  <div class="nav-r">
+  </div>
+</nav>
+
+<!-- PAGE HEADER -->
+<header class="page-head">
+  <div>
+    <div class="page-eyebrow">Mi jardín</div>
+    <h1 class="page-title">Tu <em>mapa</em> de plantas</h1>
+    <p class="page-sub" id="pageSub">Una rejilla calma para acompañar lo que cultivas. Toca una celda vacía para añadir, arrastra para reordenar.</p>
+  </div>
+  <div class="page-actions">
+    <span class="count-pill" id="gardenCount">0 plantas</span>
+    <button class="add-btn" onclick="openPickerForNextAvailable()">
+      <span class="plus">+</span> <span>Añadir planta</span>
+    </button>
+  </div>
+</header>
+
+<!-- GARDEN GRID -->
+<main class="garden-wrap">
+  <div class="garden-grid" id="gardenGrid"></div>
+  <div class="garden-empty-hint" id="emptyHint" style="display:none">
+    Tu jardín todavía no tiene plantas. Toca cualquier celda para empezar.
+  </div>
+  <p class="beyond-visible-note" id="beyondVisibleNote" hidden></p>
+  <p class="neighbor-insight" id="neighborInsight" hidden></p>
+  <div class="plus-invite" id="plusInvite" hidden>
+    <p class="plus-invite-line">Tu jardín puede crecer más allá de este espacio.</p>
+    <a class="plus-invite-link" href="verdesia_plus.html">Descubrir Verdésia Plus →</a>
+  </div>
+</main>
+
+<!-- PICKER MODAL (plant catalog) -->
+<div class="picker-backdrop" id="pickerBackdrop">
+  <div class="picker" role="dialog" aria-modal="true">
+    <div class="picker-head">
+      <div class="picker-title">¿Qué quieres cultivar?</div>
+      <div class="picker-sub" id="pickerSubLine">Elige una planta del catálogo.</div>
+      <div class="picker-search">
+        <span style="color:var(--sage-lt);font-size:14px">⌕</span>
+        <input type="text" id="pickerSearch" placeholder="Buscar una planta…" oninput="renderPicker()">
+      </div>
+    </div>
+    <div class="picker-body" id="pickerBody"></div>
+    <div class="picker-plus-foot" id="pickerPlusFoot" hidden>
+      <a class="picker-plus-link" href="verdesia_plus.html">Acceso completo con Verdésia Plus →</a>
+    </div>
+    <div class="picker-foot">
+      <button class="btn-sec" onclick="closePicker()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAP-TO-MOVE ACTION SHEET (mobile only) -->
+<div class="action-sheet-backdrop" id="actionSheetBackdrop" onclick="closeActionSheet()"></div>
+<div class="action-sheet" id="actionSheet" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="action-sheet-head">
+    <span class="action-sheet-em" id="sheetEm">🌱</span>
+    <div>
+      <div class="action-sheet-title" id="sheetTitle">—</div>
+      <div class="action-sheet-sub"   id="sheetStage">—</div>
+    </div>
+  </div>
+  <button type="button" class="action-sheet-btn" id="sheetViewBtn">Ver ficha</button>
+  <button type="button" class="action-sheet-btn" id="sheetMoveBtn">Mover a otra celda</button>
+  <button type="button" class="action-sheet-btn action-sheet-btn--danger" id="sheetRemoveBtn">Quitar del jardín</button>
+  <button type="button" class="action-sheet-btn action-sheet-btn--cancel" onclick="closeActionSheet()">Cancelar</button>
+</div>
+
+<!-- DATE MODAL -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-title">¿Cuándo la sembraste?</div>
+    <p class="modal-sub">Indica la fecha aproximada. Verdésia calculará la etapa actual.</p>
+    <label class="form-label" for="modalDate">Fecha de siembra</label>
+    <input class="form-input" type="date" id="modalDate">
+    <div class="modal-actions">
+      <button class="btn-prim" onclick="confirmAdd()">Añadir al jardín</button>
+      <button class="btn-sec"  onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   STATE + HELPERS
+══════════════════════════════════════════════ */
+const Garden    = window.SemencaGarden;
+const Storage   = window.SemencaStorage;
+const I18n      = window.SemencaI18n;
+const CATALOGUE = window.SEMENCA_PLANTS;
+
+/* ─── Architecture freemium ──────────────────────────────────
+   STORAGE_COLS/ROWS : grille canonique persistée (toujours 15×15
+   depuis v5). Toutes les positions (gridPos) sont indexées sur
+   cette taille — invariante quel que soit le plan utilisateur.
+
+   VISIBLE_COLS/ROWS : ce que l'utilisateur voit selon son plan.
+     free    → 4×4   (16 cellules — "Perfecto para comenzar")
+     premium → 15×15 (225 cellules — jardin entier)
+
+   GRID_COLS/GRID_ROWS / TOTAL_CELLS sont alias des VISIBLE pour
+   minimiser le diff avec le code existant qui les utilise. */
+
+const STORAGE_COLS = 15;
+const STORAGE_ROWS = 15;
+const STORAGE_TOTAL = STORAGE_COLS * STORAGE_ROWS;     // 225
+
+const _plan = (window.VerdesiaPlan && window.VerdesiaPlan.getPlan && window.VerdesiaPlan.getPlan()) || { gardenCols: 4, gardenRows: 4 };
+const VISIBLE_COLS = Math.min(_plan.gardenCols, STORAGE_COLS);
+const VISIBLE_ROWS = Math.min(_plan.gardenRows, STORAGE_ROWS);
+
+const GRID_COLS = VISIBLE_COLS;
+const GRID_ROWS = VISIBLE_ROWS;
+const TOTAL_CELLS = GRID_COLS * GRID_ROWS;
+
+/* ─── Helpers de coordonnées ───
+   coordToIndex/indexToCoord opèrent sur la taille STORAGE pour que
+   les gridPos restent stables quel que soit le plan. isCellInsideGrid
+   utilise la zone VISIBLE (clics/drops dans la zone interactive). */
+function coordToIndex(x, y)  { return y * STORAGE_COLS + x; }
+function indexToCoord(index) { return { x: index % STORAGE_COLS, y: Math.floor(index / STORAGE_COLS) }; }
+function isCellInsideGrid(x, y) {
+  return Number.isInteger(x) && Number.isInteger(y)
+      && x >= 0 && x < VISIBLE_COLS && y >= 0 && y < VISIBLE_ROWS;
+}
+
+/* ─── Migration en chaîne du layout de jardin ──────────────────
+   Chaque palier est versionné dans Storage.settings.gardenLayoutVersion :
+     v1 → grille 10×25 (250 cellules) — historique original
+     v2 → grille 20×20 (400 cellules) — palier 1
+     v3 → grille 15×15 (225 cellules) — palier 2
+     v4 → grille 10×10 (100 cellules) — palier 3
+     v5 → STORAGE 15×15 (225 cellules) — palier 4, freemium :
+                                         storage canonique 15×15, zone
+                                         visible dérivée du plan (4×4 free,
+                                         15×15 premium). Re-expansion 10→15.
+
+   À chaque réduction de grille, les plantes en débordement sont reflowées
+   vers la première case libre. À l'expansion, les positions (x,y) sont
+   préservées telles quelles. La chaîne joue chaque palier une seule fois
+   et reste idempotente. */
+const LAYOUT_VERSION = 5;
+
+/* Helper interne : convertit les gridPos d'un layout vers un autre.
+   Préserve la position spatiale (x,y) tant que la nouvelle grille
+   peut l'accueillir. Reflow vers le premier emplacement libre sinon.
+   Aucune donnée n'est perdue sauf si la nouvelle grille est plus
+   petite que le nombre de plantes — cas extrême, gridPos reste alors
+   tel quel (l'entrée vit en storage, ne rend pas, recoverable plus tard). */
+function _migrateLinearReflow(oldCols, oldRows, newCols, newRows) {
+  const g = Storage.loadGarden();
+  const oldTotal = oldCols * oldRows;
+  const newTotal = newCols * newRows;
+  const used = new Set();
+  const toReflow = [];
+  let dirty = false;
+
+  for (const e of g) {
+    if (!Number.isInteger(e.gridPos)) continue;
+    if (e.gridPos >= oldTotal) continue;
+    const oldCol = e.gridPos % oldCols;
+    const oldRow = Math.floor(e.gridPos / oldCols);
+    if (oldCol < newCols && oldRow < newRows) {
+      const next = oldRow * newCols + oldCol;
+      if (next !== e.gridPos) { e.gridPos = next; dirty = true; }
+      used.add(e.gridPos);
+    } else {
+      toReflow.push(e);
+    }
+  }
+
+  let cursor = 0;
+  for (const e of toReflow) {
+    while (used.has(cursor) && cursor < newTotal) cursor++;
+    if (cursor >= newTotal) continue;       // jardin plein dans le nouveau layout
+    e.gridPos = cursor;
+    used.add(cursor);
+    dirty = true;
+  }
+
+  if (dirty) Storage.saveGarden(g);
+}
+
+function migrateGridLayoutIfNeeded() {
+  const settings = Storage.loadSettings() || {};
+  let from = settings.gardenLayoutVersion || 1;
+  if (from >= LAYOUT_VERSION) return;
+
+  if (from < 2) {
+    // v1 (10×25) → v2 (20×20) — tous les (x,y) conservés (jardin agrandi à droite/bas)
+    _migrateLinearReflow(10, 25, 20, 20);
+    from = 2;
+  }
+  if (from < 3) {
+    // v2 (20×20) → v3 (15×15) — réduction : col/row 15-19 reflow.
+    _migrateLinearReflow(20, 20, 15, 15);
+    from = 3;
+  }
+  if (from < 4) {
+    // v3 (15×15) → v4 (10×10) — réduction : col/row 10-14 reflow.
+    _migrateLinearReflow(15, 15, 10, 10);
+    from = 4;
+  }
+  if (from < 5) {
+    // v4 (10×10) → v5 (15×15 storage) — expansion : tous les (x,y) conservés.
+    _migrateLinearReflow(10, 10, STORAGE_COLS, STORAGE_ROWS);
+    from = 5;
+  }
+
+  Storage.saveSettings({
+    gardenLayoutVersion: LAYOUT_VERSION,
+    gridCols: STORAGE_COLS,
+    gridRows: STORAGE_ROWS,
+  });
+}
+
+let myGarden       = [];   // [{plantId, sowDate, zone, instanceId, gridPos}, ...]
+let pendingPlantId = null; // plant being added via date modal
+let pendingPos     = null; // grid position to add into (or null = next available)
+let draggingFrom   = null; // instanceId currently being dragged
+
+/* Loads garden from storage, ensures instanceIds and gridPos for any entries
+   that lack them (legacy migration). Saving back through Storage.saveGarden
+   triggers the global semenca:gardenchange event automatically. */
+function load() {
+  let g = Garden.ensureInstanceIds(Storage.loadGarden());
+  // Migrate gridPos: assign first available slots to entries missing it.
+  const used = new Set(g.filter(e => Number.isInteger(e.gridPos)).map(e => e.gridPos));
+  let next = 0;
+  let migrated = false;
+  g.forEach(e => {
+    if (!Number.isInteger(e.gridPos)) {
+      while (used.has(next) && next < TOTAL_CELLS) next++;
+      if (next < TOTAL_CELLS) { e.gridPos = next; used.add(next); migrated = true; }
+    }
+  });
+  if (migrated) Storage.saveGarden(g);
+  myGarden = g;
+}
+
+function findEntryAt(pos) { return myGarden.find(e => e.gridPos === pos) || null; }
+function findEntryById(instanceId) { return myGarden.find(e => e.instanceId === instanceId) || null; }
+
+/* Première case libre DANS LA ZONE VISIBLE (4×4 free, 15×15 premium).
+   Un utilisateur free ne se voit jamais proposer une case hors de son
+   plan — il reste dans son cadre 4×4. */
+function firstAvailablePos() {
+  const used = new Set(myGarden.map(e => e.gridPos));
+  for (let y = 0; y < VISIBLE_ROWS; y++) {
+    for (let x = 0; x < VISIBLE_COLS; x++) {
+      const pos = coordToIndex(x, y);
+      if (!used.has(pos)) return pos;
+    }
+  }
+  return -1;
+}
+
+/* Compte les plantes qui vivent au-delà de la zone visible — utile
+   pour le message calme aux utilisateurs free qui ont des plantes
+   héritées d'une session premium antérieure. */
+function countPlantsBeyondVisible() {
+  let n = 0;
+  for (const e of myGarden) {
+    if (!Number.isInteger(e.gridPos)) continue;
+    const { x, y } = indexToCoord(e.gridPos);
+    if (x >= VISIBLE_COLS || y >= VISIBLE_ROWS) n++;
+  }
+  return n;
+}
+
+/* ─── Continuité émotionnelle : "nueva etapa" ─────────────────
+   Détecte si la planta vient d'entrer dans une nouvelle étape dans
+   les `windowDays` derniers jours. Utilisé pour afficher un petit
+   point sage discret sur la cellule. Pas de gamification, juste un
+   signal calme : "ton huerto vit, quelque chose a changé". */
+function justChangedStage(plant, days, windowDays) {
+  if (!plant || !Array.isArray(plant.stages)) return null;
+  let cum = 0;
+  for (let i = 0; i < plant.stages.length; i++) {
+    cum += plant.stages[i].days || 0;
+    // L'utilisateur est dans l'étape i+1 si days >= cum. Si days est dans
+    // [cum, cum+windowDays) et i+1 existe → transition récente.
+    if (days >= cum && days < cum + windowDays && i + 1 < plant.stages.length) {
+      const next = plant.stages[i + 1];
+      return (next && next.name && (next.name.es || next.name.fr)) || true;
+    }
+  }
+  return null;
+}
+
+/* ─── Vecindad ────────────────────────────────────────────────
+   Calcule sur la grille STORAGE (15×15), pas sur la zone visible.
+   Une plante en bord de zone free peut avoir un voisin storage qui
+   reste invisible — c'est OK, la relation existe quand même. */
+function getNeighborPositions(pos) {
+  const col = pos % STORAGE_COLS;
+  const out = [];
+  if (col > 0)                              out.push(pos - 1);                  // izquierda
+  if (col < STORAGE_COLS - 1)               out.push(pos + 1);                  // derecha
+  if (pos - STORAGE_COLS >= 0)              out.push(pos - STORAGE_COLS);       // arriba
+  if (pos + STORAGE_COLS < STORAGE_TOTAL)   out.push(pos + STORAGE_COLS);       // abajo
+  return out;
+}
+
+/* ─── Insight de vecindad global — 1 phrase calme sous la grille ─
+   Scanne toutes les paires d'associations visibles. Prioritaire :
+   une mauvaise association (info plus utile au jardinier que la
+   confirmation d'une bonne). Sinon, signale une bonne association.
+   Aucun panel, aucune liste — une seule observation éditoriale. */
+function gatherNeighborInsight() {
+  const goodPairs = [];
+  const badPairs  = [];
+  const seen = new Set(); // évite le double-comptage A↔B
+  for (const e of myGarden) {
+    if (!Number.isInteger(e.gridPos)) continue;
+    const { x, y } = indexToCoord(e.gridPos);
+    if (x >= VISIBLE_COLS || y >= VISIBLE_ROWS) continue;
+    const plant = CATALOGUE.find(p => p.id === e.plantId);
+    if (!plant) continue;
+    const neighbors = getNeighborPositions(e.gridPos);
+    for (const npos of neighbors) {
+      const nb = findEntryAt(npos);
+      if (!nb) continue;
+      const nbPlant = CATALOGUE.find(p => p.id === nb.plantId);
+      if (!nbPlant) continue;
+      const pairKey = [e.instanceId, nb.instanceId].sort().join('|');
+      if (seen.has(pairKey)) continue;
+      seen.add(pairKey);
+      const isBad  = (plant.avoid || []).includes(nb.plantId) ||
+                     (nbPlant.avoid || []).includes(plant.id);
+      const isGood = (plant.companions || []).includes(nb.plantId) ||
+                     (nbPlant.companions || []).includes(plant.id);
+      const a = (plant.name && plant.name.es) || plant.id;
+      const b = (nbPlant.name && nbPlant.name.es) || nbPlant.id;
+      if (isBad)       badPairs.push([a, b]);
+      else if (isGood) goodPairs.push([a, b]);
+    }
+  }
+  if (badPairs.length) {
+    const [a, b] = badPairs[0];
+    return { kind: 'concern', text: `${a} y ${b} podrían competir por el espacio.` };
+  }
+  if (goodPairs.length) {
+    const [a, b] = goodPairs[0];
+    return { kind: 'good', text: `${a} parece acompañar bien a ${b}.` };
+  }
+  return null;
+}
+
+/* Relación de vecindad: "bad" > "good" > null.
+   - mala asociación si A.avoid contiene B  O  B.avoid contiene A
+   - buena asociación si A.companions contiene B  O  B.companions contiene A
+   - en caso de coexistencia (vecinos mixtos), gana el rojo. */
+function getNeighborRelation(entry) {
+  if (!entry || !Number.isInteger(entry.gridPos)) return null;
+  const plant = CATALOGUE.find(p => p.id === entry.plantId);
+  if (!plant) return null;
+  const myAvoid      = plant.avoid      || [];
+  const myCompanions = plant.companions || [];
+  const neighbors = getNeighborPositions(entry.gridPos);
+  let foundGood = false;
+  for (const npos of neighbors) {
+    const nb = findEntryAt(npos);
+    if (!nb) continue;
+    const nbPlant = CATALOGUE.find(p => p.id === nb.plantId);
+    // Mala asociación — prioritaria, retorno inmediato.
+    if (myAvoid.includes(nb.plantId)) return 'bad';
+    if (nbPlant && (nbPlant.avoid || []).includes(plant.id)) return 'bad';
+    // Buena asociación — recordamos sin retornar, por si después aparece un avoid.
+    if (myCompanions.includes(nb.plantId)) foundGood = true;
+    if (nbPlant && (nbPlant.companions || []).includes(plant.id)) foundGood = true;
+  }
+  return foundGood ? 'good' : null;
+}
+
+/* ══════════════════════════════════════════════
+   TAP-TO-MOVE (mobile fallback for HTML5 drag)
+
+   Sur écrans tactiles, HTML5 dragstart/dragend ne se déclenche pas
+   depuis le doigt. On ajoute un système alternatif :
+     1. Tap une cellule occupée → action sheet apparait
+     2. "Mover a otra celda" → entre en _moveMode
+     3. Tap n'importe quelle cellule (occupée ou vide) → swap ou move
+     4. "Cancelar" ou tap sur la sheet backdrop → annule
+
+   Le drag desktop reste actif et inchangé.
+══════════════════════════════════════════════ */
+
+// Détection unique au boot — pas de re-check au resize (cas rare).
+const _isTouchOnly = (() => {
+  try { return window.matchMedia('(hover: none)').matches; }
+  catch { return false; }
+})();
+let _moveMode = null;       // { instanceId } ou null
+let _activeSheetEntry = null; // entry sur laquelle la sheet est ouverte
+
+function openActionSheet(entry) {
+  const plant = CATALOGUE.find(p => p.id === entry.plantId);
+  if (!plant) return;
+  _activeSheetEntry = entry;
+  const days = daysSince(entry.sowDate);
+  const idx  = getStageIndex(plant, days);
+  const stageName = (plant.stages[idx] && plant.stages[idx].name && plant.stages[idx].name.es) || '';
+  document.getElementById('sheetEm').textContent    = plant.emoji || '🌱';
+  document.getElementById('sheetTitle').textContent = plant.name.es || plant.id;
+  document.getElementById('sheetStage').textContent = stageName;
+  // Wire actions (idempotent — remplace à chaque ouverture)
+  document.getElementById('sheetViewBtn').onclick = () => {
+    closeActionSheet();
+    window.location.href = `verdesia_plante.html?id=${plant.id}`;
+  };
+  document.getElementById('sheetMoveBtn').onclick = () => {
+    enterMoveMode(entry.instanceId);
+    closeActionSheet();
+  };
+  document.getElementById('sheetRemoveBtn').onclick = () => {
+    closeActionSheet();
+    Garden.removePlant(entry.instanceId);
+    showToast(((plant && plant.name.es) || 'Planta') + ' retirada.');
+  };
+  document.getElementById('actionSheet').classList.add('open');
+  document.getElementById('actionSheetBackdrop').classList.add('open');
+  document.getElementById('actionSheet').setAttribute('aria-hidden', 'false');
+}
+
+function closeActionSheet() {
+  document.getElementById('actionSheet').classList.remove('open');
+  document.getElementById('actionSheetBackdrop').classList.remove('open');
+  document.getElementById('actionSheet').setAttribute('aria-hidden', 'true');
+  _activeSheetEntry = null;
+}
+
+function enterMoveMode(instanceId) {
+  _moveMode = { instanceId };
+  // Re-render pour appliquer .move-source + .move-active
+  renderGrid();
+  showToast('Toca otra celda para mover esta planta.');
+}
+
+function exitMoveMode() {
+  _moveMode = null;
+  renderGrid();
+}
+
+/* Quand on est en move mode, tap sur n'importe quelle cellule exécute le move.
+   Si tap sur la même cellule source → annule. Si tap sur occupée → swap.
+   Si tap sur vide → move. */
+function handleMoveTargetTap(targetPos) {
+  if (!_moveMode) return false;
+  const source = findEntryById(_moveMode.instanceId);
+  if (!source) { exitMoveMode(); return true; }
+  if (source.gridPos === targetPos) {
+    exitMoveMode();
+    showToast('Movimiento cancelado.');
+    return true;
+  }
+  const target = findEntryAt(targetPos);
+  if (target) {
+    // Swap
+    const sPos = source.gridPos;
+    Garden.updatePlantEntry(source.instanceId, { gridPos: targetPos });
+    Garden.updatePlantEntry(target.instanceId, { gridPos: sPos });
+  } else {
+    Garden.updatePlantEntry(source.instanceId, { gridPos: targetPos });
+  }
+  exitMoveMode();
+  showToast('Planta movida.');
+  return true;
+}
+
+/* ══════════════════════════════════════════════
+   RENDER GRID
+══════════════════════════════════════════════ */
+function daysSince(dateStr) { return Garden.daysSince(dateStr); }
+function getStageIndex(plant, days) { return Garden.getStageIndex(plant, days); }
+
+function renderGrid() {
+  const grid = document.getElementById('gardenGrid');
+  grid.innerHTML = '';
+  // Mode déplacement (mobile tap-to-move) : applique une classe globale
+  // sur le grid pour que les cellules destinations soient stylées.
+  grid.classList.toggle('move-active', !!_moveMode);
+  const count = myGarden.length;
+  document.getElementById('gardenCount').textContent =
+    count === 0 ? '0 plantas' : (count === 1 ? '1 planta' : count + ' plantas');
+  document.getElementById('emptyHint').style.display = count === 0 ? '' : 'none';
+
+  // Itère sur la zone VISIBLE selon le plan utilisateur. Les gridPos sont
+  // indexés sur le storage 15×15 (invariant), donc on les calcule via
+  // coordToIndex(x,y). Pour un utilisateur free, ça donne 16 cellules ;
+  // pour premium, 225.
+  for (let y = 0; y < VISIBLE_ROWS; y++) for (let x = 0; x < VISIBLE_COLS; x++) {
+    const pos = coordToIndex(x, y);
+    const entry = findEntryAt(pos);
+    const cell = document.createElement(entry ? 'a' : 'div');
+    cell.className = 'cell ' + (entry ? 'occupied' : 'empty');
+    cell.dataset.pos = String(pos);
+
+    if (entry) {
+      const plant = CATALOGUE.find(p => p.id === entry.plantId);
+      if (!plant) continue;
+      const d = daysSince(entry.sowDate);
+      const idx = getStageIndex(plant, d);
+      const stage = plant.stages[idx];
+      const stageName = (stage && stage.name && (stage.name.es || stage.name.fr)) || '';
+      cell.href = `verdesia_plante.html?id=${plant.id}`;
+      cell.title = (plant.name.es || plant.id) + ' · ' + stageName;
+      cell.draggable = true;
+      cell.dataset.instanceId = entry.instanceId;
+
+      // Detección de asociación de vecindad — bad > good > neutral.
+      // Se recalcula en cada renderGrid (add / remove / drag / drop / swap
+      // pasan todos por el listener semenca:gardenchange → render).
+      const relation = getNeighborRelation(entry);
+      let assocLabelHtml = '';
+      if (relation === 'bad') {
+        cell.classList.add('bad-neighbor');
+        cell.title = cell.title + ' · Vecindad a evitar';
+        // data-short alimente le mini-badge en 15×15 via ::before content.
+        // Le texte long "Mala asociación" reste pour le 4×4 free.
+        assocLabelHtml = '<div class="association-label" data-short="MALA">Mala asociación</div>';
+      } else if (relation === 'good') {
+        cell.classList.add('good-neighbor');
+        cell.title = cell.title + ' · Buena vecindad';
+        assocLabelHtml = '<div class="association-label" data-short="BUENA">Buena asociación</div>';
+      }
+
+      const photoHtml = plant.photo
+        ? `<img class="cell-photo" src="${plant.photo}" alt="" loading="lazy" decoding="async"
+                onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'cell-em',textContent:'${plant.emoji}'}))">`
+        : `<div class="cell-em">${plant.emoji || '🌱'}</div>`;
+
+      // Continuité émotionnelle : si la planta vient d'entrer dans
+      // une nouvelle étape dans la fenêtre récente (7 jours), on
+      // ajoute un petit point sage en haut à gauche. Subtil, sans
+      // animation agressive ni texte gritón. Un signe que le jardin
+      // a bougé pendant que l'utilisateur n'a pas regardé.
+      const freshStageName = justChangedStage(plant, d, 7);
+      const freshDot = freshStageName
+        ? `<span class="stage-fresh-dot" title="Nueva etapa: ${typeof freshStageName === 'string' ? freshStageName : stageName}" aria-label="Nueva etapa"></span>`
+        : '';
+
+      cell.innerHTML =
+        freshDot +
+        photoHtml +
+        `<div class="cell-name">${plant.name.es || plant.id}</div>` +
+        `<div class="cell-stage">${stageName}</div>` +
+        assocLabelHtml +
+        `<button class="cell-remove" aria-label="Quitar" title="Quitar"
+                 onclick="removeAt(event, ${pos})">✕</button>`;
+
+      // Marque la cellule source en mode déplacement
+      if (_moveMode && _moveMode.instanceId === entry.instanceId) {
+        cell.classList.add('move-source');
+      }
+
+      // Drag handlers (occupied) — desktop pointer drag uniquement
+      cell.addEventListener('dragstart', onDragStart);
+      cell.addEventListener('dragend', onDragEnd);
+
+      // Click handler unifié : en move-mode → exécute le move,
+      // sur mobile sans move-mode → ouvre l'action sheet,
+      // sur desktop → navigue vers la fiche (comportement <a href> natif).
+      cell.addEventListener('click', (ev) => {
+        if (_moveMode) {
+          ev.preventDefault();
+          handleMoveTargetTap(pos);
+          return;
+        }
+        if (_isTouchOnly) {
+          ev.preventDefault();
+          openActionSheet(entry);
+        }
+        // Desktop sans move-mode : navigation par défaut <a href>.
+      });
+    } else {
+      // Cellule vide : en move-mode → exécute le move. Sinon picker.
+      cell.addEventListener('click', () => {
+        if (_moveMode) { handleMoveTargetTap(pos); return; }
+        openPickerForCell(pos);
+      });
+    }
+    // Drop targets (all cells) — desktop drag
+    cell.addEventListener('dragover', onDragOver);
+    cell.addEventListener('dragleave', onDragLeave);
+    cell.addEventListener('drop', onDrop);
+    grid.appendChild(cell);
+  }
+}
+
+/* ══════════════════════════════════════════════
+   ADD FLOW
+══════════════════════════════════════════════ */
+function openPickerForCell(pos) {
+  pendingPos = pos;
+  pendingPlantId = null;
+  document.getElementById('pickerSubLine').textContent =
+    'Esta planta se ubicará en la celda ' + (pos + 1) + '.';
+  document.getElementById('pickerSearch').value = '';
+  renderPicker();
+  document.getElementById('pickerBackdrop').classList.add('open');
+}
+
+function openPickerForNextAvailable() {
+  const pos = firstAvailablePos();
+  if (pos < 0) {
+    showToast(`Tu jardín está lleno (${TOTAL_CELLS} celdas).`);
+    return;
+  }
+  openPickerForCell(pos);
+}
+
+function closePicker() {
+  document.getElementById('pickerBackdrop').classList.remove('open');
+  pendingPos = null;
+  pendingPlantId = null;
+}
+
+function renderPicker() {
+  const q = (document.getElementById('pickerSearch').value || '').toLowerCase().trim();
+  const body = document.getElementById('pickerBody');
+  body.innerHTML = '';
+  // Freemium catalogue gating : un utilisateur free ne voit que les ~30 plantes
+  // essentielles. Premium voit tout. Cohérent avec verdesia_explorer.html qui
+  // verrouille les mêmes cartes — sinon le picker court-circuitait la limite.
+  const tier = (window.VerdesiaPlan && window.VerdesiaPlan.getTier && window.VerdesiaPlan.getTier()) || 'free';
+  const isFreeTier = tier !== 'premium';
+  const gated = CATALOGUE.filter(p => !window.VerdesiaPlan || window.VerdesiaPlan.isPlantUnlocked(p));
+  gated
+    .filter(p => {
+      if (!q) return true;
+      const name = (p.name.es || '').toLowerCase();
+      const lat  = (p.latin || '').toLowerCase();
+      const cat  = (p.category || '').toLowerCase();
+      return name.includes(q) || lat.includes(q) || cat.includes(q);
+    })
+    .slice(0, 80)
+    .forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'pcard';
+      card.innerHTML =
+        `<div class="pcard-em">${p.emoji || '🌱'}</div>` +
+        `<div class="pcard-name">${p.name.es || p.id}</div>` +
+        (p.latin ? `<div class="pcard-lat">${p.latin}</div>` : '');
+      card.addEventListener('click', () => pickPlant(p.id));
+      body.appendChild(card);
+    });
+  // Pie de picker para tier free — invitación calma a Verdésia Plus, sin botón
+  // gritón. Sólo visible si el plan limita el catálogo (free).
+  const foot = document.getElementById('pickerPlusFoot');
+  if (foot) foot.hidden = !isFreeTier;
+}
+
+function pickPlant(plantId) {
+  pendingPlantId = plantId;
+  document.getElementById('pickerBackdrop').classList.remove('open');
+  // Default modal date to today (local)
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, '0');
+  const d = String(today.getDate()).padStart(2, '0');
+  document.getElementById('modalDate').value = `${y}-${m}-${d}`;
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+  pendingPlantId = null;
+  pendingPos = null;
+}
+
+function confirmAdd() {
+  if (!pendingPlantId) { closeModal(); return; }
+  // If pendingPos missing (race), fall back to next available.
+  let pos = Number.isInteger(pendingPos) ? pendingPos : firstAvailablePos();
+  if (pos < 0) { showToast('Tu jardín está lleno.'); closeModal(); return; }
+  // Re-validate that the slot is still empty.
+  if (findEntryAt(pos)) {
+    const alt = firstAvailablePos();
+    if (alt < 0) { showToast('Tu jardín está lleno.'); closeModal(); return; }
+    pos = alt;
+  }
+  const sowDate = document.getElementById('modalDate').value;
+  const plant   = CATALOGUE.find(p => p.id === pendingPlantId);
+  if (!plant) { closeModal(); return; }
+  const entry = Garden.addPlant(pendingPlantId, sowDate);
+  // Attach gridPos to the new entry through updatePlantEntry — both writes
+  // trigger semenca:gardenchange but we collapse them in renderGrid (idempotent).
+  Garden.updatePlantEntry(entry.instanceId, { gridPos: pos });
+  closeModal();
+  showToast((plant.name.es || plant.id) + ' añadida a tu jardín.');
+}
+
+/* ══════════════════════════════════════════════
+   REMOVE
+══════════════════════════════════════════════ */
+function removeAt(ev, pos) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  const entry = findEntryAt(pos);
+  if (!entry) return;
+  const plant = CATALOGUE.find(p => p.id === entry.plantId);
+  Garden.removePlant(entry.instanceId);
+  showToast(((plant && plant.name.es) || 'Planta') + ' retirada.');
+}
+
+/* ══════════════════════════════════════════════
+   DRAG & DROP — move or swap by gridPos
+══════════════════════════════════════════════ */
+function onDragStart(ev) {
+  const id = ev.currentTarget.dataset.instanceId;
+  draggingFrom = id;
+  ev.currentTarget.classList.add('dragging');
+  // Required for Firefox to actually start the drag.
+  try { ev.dataTransfer.setData('text/plain', id); } catch (e) {}
+  ev.dataTransfer.effectAllowed = 'move';
+}
+function onDragEnd(ev) {
+  ev.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.cell.drag-over').forEach(c => c.classList.remove('drag-over'));
+  draggingFrom = null;
+}
+function onDragOver(ev) {
+  if (!draggingFrom) return;
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = 'move';
+  ev.currentTarget.classList.add('drag-over');
+}
+function onDragLeave(ev) { ev.currentTarget.classList.remove('drag-over'); }
+function onDrop(ev) {
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('drag-over');
+  if (!draggingFrom) return;
+  const targetPos = parseInt(ev.currentTarget.dataset.pos, 10);
+  const source = findEntryById(draggingFrom);
+  if (!source || !Number.isInteger(targetPos)) return;
+  if (source.gridPos === targetPos) return;
+  const target = findEntryAt(targetPos);
+  if (target) {
+    // Swap: source.gridPos <-> target.gridPos
+    const sPos = source.gridPos;
+    Garden.updatePlantEntry(source.instanceId, { gridPos: targetPos });
+    Garden.updatePlantEntry(target.instanceId, { gridPos: sPos });
+  } else {
+    // Move into empty cell
+    Garden.updatePlantEntry(source.instanceId, { gridPos: targetPos });
+  }
+  // No manual re-render here: semenca:gardenchange listener handles it.
+}
+
+/* ══════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════ */
+let toastTmr;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(() => el.classList.remove('on'), 2400);
+}
+
+/* ══════════════════════════════════════════════
+   REACTIVITY — subscribe to storage events
+══════════════════════════════════════════════ */
+window.addEventListener('semenca:gardenchange', () => { load(); renderGrid(); });
+window.addEventListener('semenca:zonechange',   () => { renderGrid(); }); // affects nothing in grid today; safe no-op
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+/* Variable CSS qui pilote le nombre de colonnes de la grille selon
+   le plan utilisateur (4 free, 15 premium). Mise en place avant le
+   premier render pour éviter un flash de mauvaise géométrie. */
+document.documentElement.style.setProperty('--garden-cols', String(VISIBLE_COLS));
+
+/* Variante de grille selon le plan :
+   - compact (free, 4×4) : cellules plafonnées 92px, grille centrée
+   - full    (premium, 15×15) : cellules fluides, occupe le wrap
+   On bascule via une classe — le CSS gère le reste, pas de calcul JS. */
+const _gridEl = document.getElementById('gardenGrid');
+const _isFreeTier = (window.VerdesiaPlan && window.VerdesiaPlan.getTier && window.VerdesiaPlan.getTier()) !== 'premium';
+_gridEl.classList.toggle('garden-grid--compact', _isFreeTier);
+_gridEl.classList.toggle('garden-grid--full',    !_isFreeTier);
+
+/* Invitation Plus sous la grille — visible uniquement pour les utilisateurs
+   free, jamais pour les premium déjà actifs. */
+const _plusInvite = document.getElementById('plusInvite');
+if (_plusInvite) _plusInvite.hidden = !_isFreeTier;
+
+migrateGridLayoutIfNeeded();  // chaîne v1→v2→…→v5, idempotente
+load();
+renderGrid();
+renderBeyondVisibleNote();    // message calme si plantes héritées hors zone visible
+renderNeighborInsight();      // 1 observation spatiale calme sous la grille
+SemencaOnboarding.bootstrap();
+
+/* Re-render automatique si l'utilisateur change de plan (simulé via
+   verdesia_plus.html). Recharge complète — la grille a une nouvelle
+   géométrie, donc on rebuild depuis zéro. */
+window.addEventListener('verdesia:planchange', () => { window.location.reload(); });
+
+function renderBeyondVisibleNote() {
+  const host = document.getElementById('beyondVisibleNote');
+  if (!host) return;
+  const n = countPlantsBeyondVisible();
+  if (n === 0) { host.hidden = true; host.textContent = ''; return; }
+  const plural = n === 1
+    ? '1 planta vive más allá de tu vista actual'
+    : `${n} plantas viven más allá de tu vista actual`;
+  host.textContent = plural + ' — Verdésia Plus amplía tu jardín hasta 15 × 15.';
+  host.hidden = false;
+}
+
+function renderNeighborInsight() {
+  const host = document.getElementById('neighborInsight');
+  if (!host) return;
+  const insight = gatherNeighborInsight();
+  if (!insight) { host.hidden = true; host.textContent = ''; host.className = 'neighbor-insight'; return; }
+  host.textContent = insight.text;
+  host.className = 'neighbor-insight' + (insight.kind === 'concern' ? ' neighbor-insight--concern' : '');
+  host.hidden = false;
+}
+</script>
+
+<script>
+/* PWA: register service worker (silent, defensive) */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

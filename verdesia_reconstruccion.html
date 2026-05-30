@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#3B5838">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Verdésia">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180-apple.png">
+<title>Verdésia — Reconstrucción del huerto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════ TOKENS ═══════════════════════════════════════ */
+:root {
+  --soil:   #2A1E12;
+  --bark:   #4A3626;
+  --bark-lt:#7A6248;
+  --moss:   #3B5838;
+  --moss-lt:#4D7050;
+  --sage:   #78A07C;
+  --sage-lt:#A9C8AD;
+  --straw:  #E6D7B0;
+  --cream:  #F4EFE5;
+  --parch:  #EDE6D8;
+  --rust:   #B55A28;
+  --sun:    #C8A03A;
+  --white:  #FDFAF2;
+  --font-d: 'Playfair Display', Georgia, serif;
+  --font-b: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-m: 'DM Mono', monospace;
+  --ease:   cubic-bezier(.16,1,.3,1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--white);
+  color: var(--soil);
+  font-family: var(--font-b);
+  font-size: 15.5px;
+  line-height: 1.7;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+  opacity: .55;
+}
+
+/* ═══════════════════════════════════════ NAV ═══════════════════════════════════════ */
+.nav {
+  position: sticky; top: 0; z-index: 400;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px; height: 72px;
+  background: rgba(253,250,242,.93);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(42,30,18,.06);
+}
+.nav-logo {
+  font-family: var(--font-d); font-size: 22px;
+  color: var(--soil); text-decoration: none;
+  position: relative; line-height: 1.1;
+}
+.nav-logo em { color: var(--moss); font-style: italic; }
+.nav-logo::after {
+  content: 'Cultiva tu autonomía';
+  position: absolute; top: 100%; left: 0;
+  margin-top: 6px;
+  font-family: var(--font-d); font-size: 12.5px;
+  color: var(--moss-lt); font-style: italic;
+  font-weight: 400; letter-spacing: .15px;
+  white-space: nowrap; pointer-events: none;
+}
+@media (max-width: 380px) { .nav-logo::after { display: none; } }
+.nav-r { display: flex; align-items: center; gap: 14px; }
+.nav-back {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 1.5px; text-transform: uppercase;
+  text-decoration: none; transition: color .18s;
+}
+.nav-back:hover { color: var(--soil); }
+
+/* ═══════════════════════════════════════ PAGE HEAD ═══════════════════════════════════════ */
+.page-head {
+  padding: 36px 40px 22px;
+  border-bottom: 1px solid rgba(42,30,18,.06);
+  max-width: 920px; margin: 0 auto;
+}
+.page-eyebrow {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.page-title {
+  font-family: var(--font-d);
+  font-size: clamp(28px, 4vw, 42px);
+  color: var(--soil); line-height: 1.05; letter-spacing: -.6px;
+}
+.page-title em { color: var(--moss); font-style: italic; }
+.page-sub {
+  font-family: var(--font-d); font-style: italic;
+  color: var(--sage); font-size: 14.5px;
+  margin-top: 12px; max-width: 560px;
+  line-height: 1.55;
+}
+
+/* ═══════════════════════════════════════ DRAFT META ═══════════════════════════════════════ */
+.draft-meta {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  align-items: center; justify-content: center;
+  padding: 12px 18px;
+  margin: 22px auto 0;
+  max-width: 720px;
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 1.5px; text-transform: uppercase;
+}
+.draft-meta .pill {
+  padding: 5px 12px; border-radius: 100px;
+  background: var(--parch);
+  border: 1px solid rgba(42,30,18,.06);
+}
+.draft-meta .pill strong { color: var(--soil); font-weight: 500; }
+.draft-overflow-note {
+  text-align: center;
+  max-width: 540px; margin: 14px auto 0;
+  font-family: var(--font-d); font-style: italic;
+  color: var(--bark-lt); font-size: 13.5px; line-height: 1.55;
+}
+.draft-overflow-note .plus-link {
+  display: inline-block; margin-left: 6px;
+  font-family: var(--font-m); font-size: 10px;
+  letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--moss); text-decoration: none;
+  border-bottom: 1px solid rgba(59,88,56,.28);
+  padding-bottom: 1px;
+}
+.draft-overflow-note .plus-link:hover { color: var(--soil); border-bottom-color: var(--soil); }
+
+/* ═══════════════════════════════════════ GRID PREVIEW ═══════════════════════════════════════ */
+/* La forma replica visualmente Mi jardín pero las bordes dashed y el
+   ton más translucido señalan que es un brouillon — todavía no es real. */
+.preview-wrap {
+  padding: 28px 40px 36px;
+  max-width: 1180px; margin: 0 auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.preview-grid {
+  display: grid;
+  gap: 10px;
+  margin: 0 auto;
+}
+.preview-grid--compact {
+  grid-template-columns: repeat(var(--draft-cols, 4), minmax(0, 92px));
+  width: max-content;
+  max-width: 100%;
+}
+.preview-grid--full {
+  grid-template-columns: repeat(var(--draft-cols, 15), minmax(64px, 1fr));
+  width: 100%;
+  min-width: 0;
+}
+.cell {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  border: 1.5px dashed rgba(120,160,124,.45);
+  background: rgba(237,230,216,.45);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden;
+  transition: border-color .18s, background .18s, transform .12s;
+}
+.cell.empty { /* nada — la dashed border ya señala "vacío" */ }
+.cell.occupied {
+  background: var(--white);
+  border-style: solid;
+  border-color: rgba(59,88,56,.30);
+  padding: 8px;
+  cursor: grab;
+}
+.cell.occupied:active { cursor: grabbing; }
+.cell.occupied:hover { transform: translateY(-1px); border-color: rgba(59,88,56,.55); }
+.cell.dragging { opacity: .35; }
+.cell.drag-over { background: rgba(59,88,56,.10); border-color: var(--moss); }
+.cell-em {
+  font-size: clamp(20px, 4vw, 30px);
+  line-height: 1; margin-bottom: 4px;
+}
+.cell-photo {
+  width: 100%; height: 56%; object-fit: cover;
+  border-radius: 6px; margin-bottom: 4px; display: block;
+}
+.cell-name {
+  font-family: var(--font-b); font-size: 12px; font-weight: 500;
+  color: var(--soil); line-height: 1.15;
+  text-align: center; padding: 0 4px;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
+  overflow: hidden; max-width: 100%;
+}
+.cell-stage {
+  font-family: var(--font-m); font-size: 8px;
+  color: var(--sage-lt); letter-spacing: .6px; text-transform: uppercase;
+  margin-top: 1px;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Confidence dot — pequeño señalador en la esquina superior izquierda.
+   Tres niveles, todos en gamas verdes/tierra. Nunca rojo. */
+.conf-dot {
+  position: absolute; top: 6px; left: 6px;
+  width: 7px; height: 7px; border-radius: 50%;
+  border: 1px solid rgba(42,30,18,.18);
+}
+.conf-dot.conf-high   { background: var(--moss); }
+.conf-dot.conf-medium { background: var(--sage); }
+.conf-dot.conf-low    { background: var(--sage-lt); opacity: .65; }
+
+/* Botón remove — invisible salvo hover (mobile siempre visible). */
+.cell-remove {
+  position: absolute; top: 4px; right: 4px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(74,54,38,.55); color: white;
+  font-size: 11px; line-height: 1; border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0;
+  transition: opacity .15s, background .15s;
+}
+.cell.occupied:hover .cell-remove,
+.cell.occupied:focus-within .cell-remove { opacity: 1; }
+.cell-remove:hover { background: rgba(181,90,40,.85); }
+@media (hover: none) {
+  /* Sur tactile : zone tappable agrandie, glyphe garde 11px. */
+  .cell-remove {
+    opacity: .85;
+    width: 32px; height: 32px;
+    top: 2px; right: 2px;
+  }
+}
+
+/* ─── Tap-to-move mobile (parallèle au système Mi jardín) ─────
+   HTML5 drag/drop ne fonctionne pas sur touch. Sur tactile, tap
+   une suggestion → action sheet → "Mover" → tap destination. */
+.cell.move-source {
+  box-shadow: inset 0 0 0 2px var(--moss);
+  background: rgba(59,88,56,.10);
+  border-style: solid;
+}
+.preview-grid.move-active .cell:not(.move-source) {
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.preview-grid.move-active .cell.empty:hover,
+.preview-grid.move-active .cell.empty:active {
+  background: rgba(59,88,56,.10);
+  border-color: rgba(59,88,56,.40);
+}
+
+/* Action sheet — même pattern que Mi jardín. Toujours en bas, calme. */
+.action-sheet-backdrop {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(42,30,18,.18);
+  backdrop-filter: blur(2px);
+  display: none;
+  animation: fadeIn .18s ease-out;
+}
+.action-sheet-backdrop.open { display: block; }
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+.action-sheet {
+  position: fixed;
+  left: 50%; bottom: 18px;
+  transform: translateX(-50%);
+  width: 92%; max-width: 420px;
+  z-index: 901;
+  background: var(--white);
+  border: 1px solid rgba(42,30,18,.08);
+  border-radius: 16px;
+  padding: 16px 18px 18px;
+  box-shadow: 0 12px 36px rgba(42,30,18,.18);
+  font-family: var(--font-b);
+  display: none;
+  animation: sheetIn .22s var(--ease);
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+.action-sheet.open { display: block; }
+@keyframes sheetIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.action-sheet-head {
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(42,30,18,.06);
+  margin-bottom: 8px;
+}
+.action-sheet-em { font-size: 22px; line-height: 1; }
+.action-sheet-title {
+  font-family: var(--font-d); font-size: 17px;
+  color: var(--soil); line-height: 1.2;
+}
+.action-sheet-sub {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 1.4px; text-transform: uppercase;
+  margin-top: 3px;
+}
+.action-sheet-btn {
+  display: block; width: 100%;
+  padding: 13px 14px; margin: 0;
+  background: transparent; border: none;
+  text-align: left;
+  font-family: var(--font-b); font-size: 14.5px; font-weight: 400;
+  color: var(--soil);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.action-sheet-btn:hover, .action-sheet-btn:active {
+  background: rgba(59,88,56,.07);
+}
+.action-sheet-btn--danger { color: var(--rust); }
+.action-sheet-btn--cancel {
+  font-family: var(--font-m); font-size: 10px;
+  letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--bark-lt);
+  text-align: center;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(42,30,18,.06);
+}
+
+/* ═══════════════════════════════════════ EMPTY STATE ═══════════════════════════════════════ */
+.empty {
+  max-width: 520px; margin: 32px auto;
+  padding: 64px 28px;
+  text-align: center;
+  background: var(--white);
+  border: 1px dashed rgba(42,30,18,.14);
+  border-radius: 14px;
+}
+.empty-em { font-size: 32px; opacity: .35; margin-bottom: 14px; }
+.empty-title {
+  font-family: var(--font-d);
+  font-size: 21px; color: var(--bark-lt);
+  line-height: 1.3; margin-bottom: 10px;
+}
+.empty-sub {
+  font-size: 14px; color: var(--sage);
+  font-weight: 300; line-height: 1.7;
+  max-width: 380px; margin: 0 auto 22px;
+}
+.empty-cta {
+  display: inline-block;
+  padding: 11px 22px; border-radius: 100px;
+  background: var(--moss); color: var(--white);
+  text-decoration: none;
+  font-family: var(--font-b); font-size: 13.5px; font-weight: 500;
+  transition: background .18s;
+}
+.empty-cta:hover { background: var(--soil); }
+
+/* ═══════════════════════════════════════ ACTIONS ═══════════════════════════════════════ */
+.actions {
+  display: flex; align-items: center; justify-content: center;
+  gap: 22px; flex-wrap: wrap;
+  padding: 32px 40px 64px;
+  max-width: 720px; margin: 0 auto;
+  border-top: 1px solid rgba(42,30,18,.06);
+  margin-top: 24px;
+}
+.btn-validate {
+  padding: 13px 28px; border-radius: 100px;
+  background: var(--moss); color: var(--white);
+  border: 1px solid var(--moss);
+  font-family: var(--font-b); font-size: 14.5px; font-weight: 500;
+  cursor: pointer;
+  transition: background .18s, border-color .18s;
+}
+.btn-validate:hover { background: var(--soil); border-color: var(--soil); }
+.btn-discard {
+  font-family: var(--font-m); font-size: 10px;
+  letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--bark-lt); text-decoration: none;
+  background: none; border: none;
+  cursor: pointer; padding: 4px 0;
+  border-bottom: 1px solid rgba(122,98,72,.32);
+  transition: color .18s, border-color .18s;
+}
+.btn-discard:hover { color: var(--rust); border-bottom-color: var(--rust); }
+/* Augmente la zone tappable sur le lien discard (mobile-friendly). */
+.btn-discard { padding: 8px 4px; }
+
+/* Sticky bottom action bar — mobile uniquement. La validation et le
+   discard restent toujours accessibles, même au milieu d'une grille
+   15×15 longue. Safe-area-inset-bottom pour iOS notch. */
+@media (max-width: 720px) {
+  .actions {
+    position: sticky;
+    bottom: 0;
+    background: rgba(253,250,242,.96);
+    backdrop-filter: blur(10px);
+    padding: 14px 18px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    margin-top: 16px;
+    border-top: 1px solid rgba(42,30,18,.08);
+    box-shadow: 0 -6px 24px rgba(42,30,18,.06);
+    z-index: 50;
+  }
+}
+
+/* ═══════════════════════════════════════ TOAST ═══════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  background: rgba(42,30,18,.9); color: var(--straw);
+  padding: 10px 22px; border-radius: 100px; font-size: 13.5px;
+  font-family: var(--font-b); opacity: 0; transition: opacity .22s;
+  pointer-events: none; z-index: 9000; white-space: nowrap;
+}
+.toast.on { opacity: 1; }
+
+/* ═══════════════════════════════════════ MOBILE ═══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .nav { padding: 0 18px; }
+  .page-head { padding: 28px 20px 18px; }
+  .preview-wrap { padding: 22px 18px 28px; }
+  .actions { padding: 24px 18px 56px; gap: 18px; }
+  .draft-meta { padding: 10px 14px; gap: 10px; }
+}
+@media (max-width: 480px) {
+  .cell-name { font-size: 11px; }
+  .cell-stage { font-size: 7.5px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ NAV minimal -->
+<nav class="nav">
+  <a href="verdesia_landing.html" class="nav-logo">Verd<em>ésia</em></a>
+  <div class="nav-r">
+    <a href="verdesia_brote.html" class="nav-back">← Volver a la lectura</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════ PAGE HEAD -->
+<header class="page-head">
+  <div class="page-eyebrow">Mapa del huerto · Reconstrucción aproximada</div>
+  <h1 class="page-title">Tu jardín <em>reconstruido</em></h1>
+  <p class="page-sub">Verdésia te propone una distribución a partir de tu lectura. Puedes corregir cualquier elemento antes de actualizar tu jardín.</p>
+</header>
+
+<!-- ═══════════════════ DRAFT META -->
+<div class="draft-meta" id="draftMeta" hidden></div>
+<p class="draft-overflow-note" id="draftOverflowNote" hidden></p>
+
+<!-- ═══════════════════ PREVIEW GRID -->
+<main class="preview-wrap" id="previewWrap">
+  <div class="preview-grid" id="previewGrid"></div>
+</main>
+
+<!-- ═══════════════════ EMPTY STATE -->
+<section class="empty" id="emptyState" hidden>
+  <div class="empty-em">🌿</div>
+  <div class="empty-title" id="emptyTitle">La distribución parece difícil de interpretar.</div>
+  <p class="empty-sub" id="emptySub">Intenta una foto con mejor luz y un encuadre que muestre varias plantas — o continúa observando tu huerto a mano.</p>
+  <a class="empty-cta" href="verdesia_brote.html">Volver a la lectura</a>
+</section>
+
+<!-- ═══════════════════ ACTIONS -->
+<section class="actions" id="actionsBar" hidden>
+  <button type="button" class="btn-validate" id="btnValidate">Actualizar mi jardín</button>
+  <button type="button" class="btn-discard"  id="btnDiscard">Descartar reconstrucción</button>
+</section>
+
+<!-- TAP-TO-MOVE ACTION SHEET (mobile only) -->
+<div class="action-sheet-backdrop" id="actionSheetBackdrop"></div>
+<div class="action-sheet" id="actionSheet" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="action-sheet-head">
+    <span class="action-sheet-em" id="sheetEm">🌱</span>
+    <div>
+      <div class="action-sheet-title" id="sheetTitle">—</div>
+      <div class="action-sheet-sub"   id="sheetStage">—</div>
+    </div>
+  </div>
+  <button type="button" class="action-sheet-btn" id="sheetMoveBtn">Mover a otra celda</button>
+  <button type="button" class="action-sheet-btn action-sheet-btn--danger" id="sheetRemoveBtn">Quitar de la reconstrucción</button>
+  <button type="button" class="action-sheet-btn action-sheet-btn--cancel" id="sheetCancelBtn">Cancelar</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════ SCRIPTS -->
+<script src="plants.js"></script>
+<script src="storage.js"></script>
+<script src="verdesia_region_config.js"></script>
+<script src="verdesia_plan.js"></script>
+<script src="garden.js"></script>
+<script src="observations.js"></script>
+<script src="garden_reconstruction.js"></script>
+<script src="onboarding.js"></script>
+<script src="verdesia_profile.js" defer></script>
+
+<script>
+(function () {
+
+  const STAGE_LABEL = {
+    germinacion: 'Germinando',
+    vegetativo:  'Vegetativo',
+    floracion:   'Floración',
+    fructificacion: 'Fructificación',
+    maduracion:  'Maduración',
+    cosecha:     'Cosecha',
+    senescencia: 'Final de ciclo',
+  };
+
+  /* ─── Refs ─────────────────────────────────────────────────── */
+  const $grid    = document.getElementById('previewGrid');
+  const $meta    = document.getElementById('draftMeta');
+  const $overflow= document.getElementById('draftOverflowNote');
+  const $empty   = document.getElementById('emptyState');
+  const $actions = document.getElementById('actionsBar');
+  const $wrap    = document.getElementById('previewWrap');
+  const $toast   = document.getElementById('toast');
+
+  /* ─── Toast helper ─────────────────────────────────────────── */
+  let toastTmr;
+  function showToast(msg) {
+    $toast.textContent = msg;
+    $toast.classList.add('on');
+    clearTimeout(toastTmr);
+    toastTmr = setTimeout(() => $toast.classList.remove('on'), 2400);
+  }
+
+  /* ─── Tap-to-move (mobile fallback) ────────────────────────
+     Sur écrans tactiles, HTML5 drag/drop ne fonctionne pas. On
+     ajoute un mode "tap pour bouger" qui réutilise les APIs
+     existantes de VerdesiaReconstruction. */
+
+  const _isTouchOnly = (() => {
+    try { return window.matchMedia('(hover: none)').matches; }
+    catch { return false; }
+  })();
+  let _moveMode = null;          // { sugId } ou null
+  let _sheetEntry = null;        // sugestión activement éditée
+
+  const $sheet = document.getElementById('actionSheet');
+  const $sheetBackdrop = document.getElementById('actionSheetBackdrop');
+
+  function openActionSheet(sug) {
+    _sheetEntry = sug;
+    document.getElementById('sheetEm').textContent    = sug.plantEmoji || '🌱';
+    document.getElementById('sheetTitle').textContent = sug.plantName || sug.plantId;
+    document.getElementById('sheetStage').textContent = STAGE_LABEL[sug.growthStage] || sug.growthStage || '';
+    $sheet.classList.add('open');
+    $sheetBackdrop.classList.add('open');
+    $sheet.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeActionSheet() {
+    $sheet.classList.remove('open');
+    $sheetBackdrop.classList.remove('open');
+    $sheet.setAttribute('aria-hidden', 'true');
+    _sheetEntry = null;
+  }
+
+  function enterMoveMode(sugId) {
+    _moveMode = { sugId };
+    render();
+    showToast('Toca otra celda para mover esta sugerencia.');
+  }
+
+  function exitMoveMode() {
+    _moveMode = null;
+    render();
+  }
+
+  function handleMoveTargetTap(x, y) {
+    if (!_moveMode) return false;
+    const draft = window.VerdesiaReconstruction.loadDraft();
+    if (!draft) { exitMoveMode(); return true; }
+    const source = draft.suggestions.find(s => s.id === _moveMode.sugId);
+    if (!source) { exitMoveMode(); return true; }
+    if (source.suggestedX === x && source.suggestedY === y) {
+      exitMoveMode();
+      showToast('Movimiento cancelado.');
+      return true;
+    }
+    // moveSuggestion gère already le swap interne
+    window.VerdesiaReconstruction.moveSuggestion(_moveMode.sugId, x, y);
+    exitMoveMode();
+    showToast('Sugerencia movida.');
+    return true;
+  }
+
+  // Wire des boutons du sheet (idempotent — une seule fois au load)
+  document.getElementById('sheetMoveBtn').addEventListener('click', () => {
+    if (!_sheetEntry) { closeActionSheet(); return; }
+    const id = _sheetEntry.id;
+    closeActionSheet();
+    enterMoveMode(id);
+  });
+  document.getElementById('sheetRemoveBtn').addEventListener('click', () => {
+    if (!_sheetEntry) { closeActionSheet(); return; }
+    const id = _sheetEntry.id;
+    closeActionSheet();
+    window.VerdesiaReconstruction.removeSuggestion(id);
+    showToast('Sugerencia retirada.');
+  });
+  document.getElementById('sheetCancelBtn').addEventListener('click', closeActionSheet);
+  $sheetBackdrop.addEventListener('click', closeActionSheet);
+
+  /* ─── Drag state ──────────────────────────────────────────── */
+  let draggingId = null;
+  function onDragStart(ev) {
+    draggingId = ev.currentTarget.dataset.sugId;
+    ev.currentTarget.classList.add('dragging');
+    try { ev.dataTransfer.setData('text/plain', draggingId); } catch {}
+    ev.dataTransfer.effectAllowed = 'move';
+  }
+  function onDragEnd(ev) {
+    ev.currentTarget.classList.remove('dragging');
+    document.querySelectorAll('.cell.drag-over').forEach(c => c.classList.remove('drag-over'));
+    draggingId = null;
+  }
+  function onDragOver(ev) {
+    if (!draggingId) return;
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = 'move';
+    ev.currentTarget.classList.add('drag-over');
+  }
+  function onDragLeave(ev) { ev.currentTarget.classList.remove('drag-over'); }
+  function onDrop(ev) {
+    ev.preventDefault();
+    ev.currentTarget.classList.remove('drag-over');
+    if (!draggingId) return;
+    const x = parseInt(ev.currentTarget.dataset.x, 10);
+    const y = parseInt(ev.currentTarget.dataset.y, 10);
+    if (Number.isInteger(x) && Number.isInteger(y)) {
+      window.VerdesiaReconstruction.moveSuggestion(draggingId, x, y);
+    }
+  }
+
+  /* ─── Render ───────────────────────────────────────────────── */
+  function render() {
+    const draft = window.VerdesiaReconstruction.loadDraft();
+
+    // Sin draft / sin sugerencias → estado vacío editorial.
+    if (!draft || !draft.suggestions || draft.suggestions.length === 0) {
+      $grid.innerHTML = '';
+      $meta.hidden = true;
+      $overflow.hidden = true;
+      $actions.hidden = true;
+      $wrap.hidden = true;
+      $empty.hidden = false;
+      return;
+    }
+
+    $empty.hidden = true;
+    $wrap.hidden = false;
+    $actions.hidden = false;
+
+    const cols = draft.visibleCols || 4;
+    const rows = draft.visibleRows || 4;
+    const isCompact = cols <= 6;
+
+    $grid.className = 'preview-grid ' + (isCompact ? 'preview-grid--compact' : 'preview-grid--full');
+    // Mode déplacement actif → classe globale pour styler les cellules
+    // destinations potentielles + la source.
+    if (_moveMode) $grid.classList.add('move-active');
+    document.documentElement.style.setProperty('--draft-cols', String(cols));
+
+    // Mapa pos → sugerencia
+    const byPos = new Map();
+    for (const s of draft.suggestions) {
+      byPos.set(`${s.suggestedX},${s.suggestedY}`, s);
+    }
+
+    $grid.innerHTML = '';
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const cell = document.createElement('div');
+        cell.dataset.x = String(x);
+        cell.dataset.y = String(y);
+        cell.className = 'cell';
+
+        const sug = byPos.get(`${x},${y}`);
+        if (sug) {
+          cell.classList.add('occupied');
+          cell.dataset.sugId = sug.id;
+          cell.draggable = true;
+          cell.addEventListener('dragstart', onDragStart);
+          cell.addEventListener('dragend', onDragEnd);
+
+          // Marque la cellule source en move mode
+          if (_moveMode && _moveMode.sugId === sug.id) {
+            cell.classList.add('move-source');
+          }
+
+          const confDot = `<span class="conf-dot conf-${sug.confidence}" title="Confianza: ${sug.confidence}"></span>`;
+          const removeBtn = `<button class="cell-remove" aria-label="Quitar" title="Quitar" data-sug-id="${sug.id}">×</button>`;
+          const photo = sug.plantPhoto
+            ? `<img class="cell-photo" src="${sug.plantPhoto}" alt="" loading="lazy" decoding="async"
+                    onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'cell-em',textContent:'${sug.plantEmoji}'}))">`
+            : `<div class="cell-em">${sug.plantEmoji || '🌱'}</div>`;
+          const stageLabel = STAGE_LABEL[sug.growthStage] || sug.growthStage || '';
+
+          cell.innerHTML =
+            confDot + photo +
+            `<div class="cell-name">${sug.plantName}</div>` +
+            (stageLabel ? `<div class="cell-stage">${stageLabel}</div>` : '') +
+            removeBtn;
+        } else {
+          cell.classList.add('empty');
+        }
+
+        // Click handler unifié — en move-mode exécute le move (occupée ou vide),
+        // sur tactile + sugestión → action sheet, sinon no-op.
+        cell.addEventListener('click', (ev) => {
+          if (_moveMode) {
+            ev.preventDefault();
+            handleMoveTargetTap(x, y);
+            return;
+          }
+          if (_isTouchOnly && sug) {
+            ev.preventDefault();
+            openActionSheet(sug);
+          }
+        });
+
+        cell.addEventListener('dragover', onDragOver);
+        cell.addEventListener('dragleave', onDragLeave);
+        cell.addEventListener('drop', onDrop);
+        $grid.appendChild(cell);
+      }
+    }
+
+    // Wire remove buttons después del innerHTML.
+    $grid.querySelectorAll('.cell-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = btn.dataset.sugId;
+        window.VerdesiaReconstruction.removeSuggestion(id);
+        showToast('Sugerencia retirada.');
+      });
+    });
+
+    // Meta + overflow note.
+    renderMeta(draft);
+  }
+
+  function renderMeta(draft) {
+    $meta.hidden = false;
+    const n = draft.suggestions.length;
+    $meta.innerHTML = `
+      <span class="pill"><strong>${n}</strong> ${n === 1 ? 'planta sugerida' : 'plantas sugeridas'}</span>
+      <span class="pill">${draft.visibleCols} × ${draft.visibleRows}</span>
+    `;
+
+    // Si la IA detectó más plantas que el espacio visible, mostramos un
+    // mensaje calmo. Distinguimos el caso free (4×4) — soft Plus link —
+    // del caso premium (raramente saturado).
+    if (draft.droppedCount > 0) {
+      const tier = (window.VerdesiaPlan && window.VerdesiaPlan.getTier && window.VerdesiaPlan.getTier()) || 'free';
+      const base = draft.droppedCount === 1
+        ? '1 planta detectada no encontró espacio en la grilla.'
+        : `${draft.droppedCount} plantas detectadas no encontraron espacio en la grilla.`;
+      if (tier !== 'premium') {
+        $overflow.innerHTML = base +
+          '<a class="plus-link" href="verdesia_plus.html">Verdésia Plus reconstruye sobre 15 × 15 →</a>';
+      } else {
+        $overflow.textContent = base;
+      }
+      $overflow.hidden = false;
+    } else {
+      $overflow.hidden = true;
+    }
+  }
+
+  /* ─── Actions ──────────────────────────────────────────────── */
+  document.getElementById('btnValidate').addEventListener('click', () => {
+    const res = window.VerdesiaReconstruction.validateDraft();
+    if (!res || !res.added) {
+      showToast('No se pudo actualizar el jardín.');
+      return;
+    }
+    showToast(res.added === 1
+      ? 'Tu jardín se actualizó con 1 planta.'
+      : `Tu jardín se actualizó con ${res.added} plantas.`);
+    setTimeout(() => { location.replace('verdesia_jardin.html'); }, 900);
+  });
+
+  document.getElementById('btnDiscard').addEventListener('click', () => {
+    window.VerdesiaReconstruction.discardDraft();
+    showToast('Reconstrucción descartada.');
+    setTimeout(() => { location.replace('verdesia_brote.html'); }, 700);
+  });
+
+  /* ─── Reactividad ─── */
+  window.addEventListener('verdesia:draftchange', render);
+
+  /* ─── Init ─── */
+  render();
+})();
+</script>
+
+</body>
+</html>

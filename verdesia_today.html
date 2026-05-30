@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#3B5838">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Verdésia">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180-apple.png">
+<title>Verdésia — Hoy en tu jardín</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ═══════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════ */
+:root {
+  --soil:   #2A1E12;
+  --bark:   #4A3626;
+  --bark-lt:#7A6248;
+  --moss:   #3B5838;
+  --moss-lt:#4D7050;
+  --sage:   #78A07C;
+  --sage-lt:#A9C8AD;
+  --straw:  #E6D7B0;
+  --cream:  #F4EFE5;
+  --parch:  #EDE6D8;
+  --rust:   #B55A28;
+  --sun:    #C8A03A;
+  --white:  #FDFAF2;
+  --font-d: 'Playfair Display', Georgia, serif;
+  --font-b: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-m: 'DM Mono', monospace;
+  --ease:   cubic-bezier(.16,1,.3,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--cream);
+  color: var(--soil);
+  font-family: var(--font-b);
+  font-size: 15.5px;
+  line-height: 1.7;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* grain texture */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+  opacity: .55;
+}
+
+/* ═══════════════════════════════════════
+   NAV
+═══════════════════════════════════════ */
+.nav {
+  position: sticky; top: 0; z-index: 400;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 48px; height: 72px;
+  background: rgba(253,250,242,.93);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(42,30,18,.06);
+}
+.nav-logo {
+  font-family: var(--font-d); font-size: 22px;
+  color: var(--soil); text-decoration: none;
+  position: relative; line-height: 1.1;
+}
+.nav-logo em { color: var(--moss); font-style: italic; }
+/* Tagline editorial — assise sous le wordmark, lisible, sans bruit */
+.nav-logo::after {
+  content: 'Cultiva tu autonomía';
+  position: absolute; top: 100%; left: 0;
+  margin-top: 6px;
+  font-family: var(--font-d); font-size: 12.5px;
+  color: var(--moss-lt); font-style: italic;
+  font-weight: 400; letter-spacing: .15px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media (max-width: 380px) { .nav-logo::after { display: none; } }
+
+.nav-links {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 28px; align-items: center;
+}
+.nav-link {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  text-decoration: none; transition: color .18s;
+  padding-bottom: 2px; border-bottom: 1px solid transparent;
+}
+.nav-link.active { color: var(--soil); border-bottom-color: var(--moss); }
+.nav-link:hover  { color: var(--bark); }
+
+.nav-r { display: flex; align-items: center; gap: 14px; }
+.lang-sw { display: flex; border: 1px solid rgba(42,30,18,.11); border-radius: 100px; overflow: hidden; }
+.lb { padding: 4px 10px; border: none; background: transparent; font-family: var(--font-m); font-size: 9.5px; letter-spacing: .5px; color: var(--bark-lt); cursor: pointer; transition: background .15s, color .15s; }
+.lb.on { background: var(--moss); color: var(--white); }
+
+/* ═══════════════════════════════════════
+   HERO — the living moment
+═══════════════════════════════════════ */
+.hero {
+  background: var(--white);
+  border-bottom: 1px solid rgba(42,30,18,.07);
+  padding: 52px 48px 44px;
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 32px; align-items: start;
+  position: relative; overflow: hidden;
+}
+
+/* Seasonal background wash */
+.hero-wash {
+  position: absolute; inset: 0; z-index: 0;
+  transition: background 2s ease;
+}
+
+.hero-left { position: relative; z-index: 1; }
+
+.hero-dateline {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.monthly-obs {
+  font-family: var(--font-d); font-style: italic;
+  font-size: 14.5px; color: var(--sage);
+  max-width: 480px; line-height: 1.5;
+  margin-bottom: 20px;
+}
+/* Memory callback — petite ligne mono au-dessus de l'observation mensuelle.
+   Apparait seulement si l'utilisateur a une observation passée d'au moins
+   deux mois. Reconnecte calmement le présent au passé, sans urgence. */
+.memory-callback {
+  display: block;
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--sage-lt); letter-spacing: 1.3px; text-transform: uppercase;
+  font-style: normal; font-weight: 500;
+  margin-bottom: 8px;
+  max-width: 480px; line-height: 1.5;
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--sage); flex-shrink: 0;
+  animation: live-pulse 3s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .4; transform: scale(.7); }
+}
+
+.hero-title {
+  font-family: var(--font-d);
+  font-size: clamp(30px, 4.5vw, 52px);
+  color: var(--soil); line-height: 1.05;
+  letter-spacing: -1.5px; margin-bottom: 14px;
+}
+.hero-title em { color: var(--moss); font-style: italic; }
+
+.hero-context {
+  font-size: 15px; color: var(--bark-lt);
+  font-weight: 300; max-width: 520px; line-height: 1.85;
+}
+.hero-context strong { color: var(--bark); font-weight: 500; }
+
+/* Season panel right */
+.season-panel {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 14px;
+}
+.season-badge {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px;
+  background: var(--parch); border: 1px solid rgba(42,30,18,.08);
+  border-radius: 12px; white-space: nowrap;
+}
+.sb-icon { font-size: 24px; }
+.sb-info {}
+.sb-name { font-family: var(--font-b); font-size: 16px; font-weight: 500; color: var(--soil); letter-spacing: -.1px; }
+.sb-months { font-family: var(--font-m); font-size: 9px; color: var(--sage); letter-spacing: 1px; margin-top: 2px; }
+
+/* Month strip */
+.month-strip {
+  display: flex; gap: 3px;
+}
+.ms-month {
+  width: 22px; height: 22px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-m); font-size: 8.5px; color: var(--sage-lt);
+  background: rgba(42,30,18,.04);
+  transition: background .2s;
+}
+.ms-month.current {
+  background: var(--moss); color: var(--white); font-weight: 500;
+}
+.ms-month.season-month {
+  background: rgba(120,160,124,.15); color: var(--moss);
+}
+
+/* ═══════════════════════════════════════
+   MAIN CONTENT GRID
+═══════════════════════════════════════ */
+.main {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 0;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 40px 48px;
+  align-items: start;
+}
+
+/* ═══════════════════════════════════════
+   LEFT — primary feed
+═══════════════════════════════════════ */
+.feed { display: flex; flex-direction: column; gap: 28px; padding-right: 48px; border-right: 1px solid rgba(42,30,18,.07); }
+
+/* Section heads */
+.feed-label {
+  font-family: var(--font-m); font-size: 8.5px;
+  color: var(--sage); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.feed-label::after { content: ''; flex: 1; height: 1px; background: rgba(42,30,18,.07); }
+.feed-label span { white-space: nowrap; }
+
+/* ─── PARA HOY · contextual reminders ─── */
+.today-reminders { display: flex; flex-direction: column; gap: 8px; }
+.tr-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 18px; border-radius: 10px;
+  background: var(--white);
+  border: 1px solid rgba(42,30,18,.07);
+  border-left: 3px solid var(--moss);
+  text-decoration: none; color: inherit;
+  transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.tr-item:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(42,30,18,.06); border-left-color: var(--rust); }
+.tr-em { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.tr-body { flex: 1; min-width: 0; }
+.tr-text { font-size: 13.5px; color: var(--bark); font-weight: 400; line-height: 1.55; }
+.tr-text em { font-style: italic; color: var(--moss); font-weight: 500; }
+.tr-sub { font-size: 11px; color: var(--sage); font-weight: 300; margin-top: 3px; }
+.tr-item.tr-season { border-left-color: var(--sun); }
+.tr-item.tr-harvest { border-left-color: var(--rust); }
+.tr-item.tr-seeds   { border-left-color: var(--bark-lt); }
+
+/* ─── MY GARDEN STATUS ─── */
+.garden-status-grid {
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.plant-status-card {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 18px 20px; border-radius: 12px;
+  background: var(--white); border: 1px solid rgba(42,30,18,.07);
+  cursor: pointer; transition: border-color .18s, transform .18s, box-shadow .18s;
+  text-decoration: none; position: relative;
+}
+.plant-status-card:hover {
+  border-color: var(--sage-lt); transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(42,30,18,.07);
+}
+
+/* Stage color bar on left edge */
+.psc-bar {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 12px 0 0 12px;
+}
+
+.psc-em {
+  font-size: 28px; flex-shrink: 0; margin-top: 2px;
+}
+.psc-body { flex: 1; min-width: 0; }
+.psc-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 8px;
+}
+.psc-name { font-family: var(--font-b); font-size: 17px; font-weight: 600; color: var(--soil); line-height: 1.25; letter-spacing: -.1px; }
+.psc-stage-badge {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 100px; flex-shrink: 0;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+  font-family: var(--font-b);
+}
+
+/* The key message — what to do now */
+.psc-action {
+  font-size: 13.5px; color: var(--bark-lt);
+  font-weight: 300; line-height: 1.75; margin-bottom: 12px;
+}
+.psc-action strong { color: var(--bark); font-weight: 500; }
+
+/* Progress + meta row */
+.psc-meta {
+  display: flex; align-items: center; gap: 14px;
+}
+.psc-progress-wrap { flex: 1; }
+.psc-progress-bar {
+  height: 4px; background: rgba(42,30,18,.07); border-radius: 2px; overflow: hidden;
+}
+.psc-progress-fill { height: 100%; border-radius: 2px; transition: width 1.2s var(--ease); }
+.psc-progress-label {
+  font-family: var(--font-m); font-size: 8.5px; color: var(--sage-lt);
+  margin-top: 4px; display: flex; justify-content: space-between;
+}
+.psc-days {
+  font-family: var(--font-m); font-size: 10.5px;
+  color: var(--sage-lt); white-space: nowrap;
+}
+.psc-zone {
+  font-family: var(--font-m); font-size: 9.5px;
+  background: var(--parch); color: var(--bark-lt);
+  padding: 2px 8px; border-radius: 100px;
+}
+
+/* Empty garden state */
+.garden-empty {
+  padding: 32px 28px; text-align: center;
+  background: var(--white); border: 1px dashed rgba(42,30,18,.12);
+  border-radius: 12px; color: var(--sage-lt);
+}
+.ge-icon { font-size: 32px; margin-bottom: 12px; opacity: .4; }
+.ge-title { font-family: var(--font-d); font-size: 18px; color: var(--bark-lt); margin-bottom: 8px; }
+.ge-sub   { font-size: 13px; font-weight: 300; margin-bottom: 20px; line-height: 1.7; }
+.ge-btn {
+  padding: 10px 24px; border-radius: 100px;
+  background: var(--moss); color: var(--white);
+  font-family: var(--font-b); font-size: 13.5px; font-weight: 500;
+  border: none; cursor: pointer; transition: background .18s, transform .15s;
+  text-decoration: none; display: inline-block;
+}
+.ge-btn:hover { background: var(--soil); transform: translateY(-1px); }
+
+/* ─── SEASONAL ADVICE ─── */
+.seasonal-card {
+  padding: 24px 26px; border-radius: 12px;
+  position: relative; overflow: hidden;
+}
+.sc-eyebrow {
+  font-family: var(--font-m); font-size: 8.5px; letter-spacing: 1.5px;
+  text-transform: uppercase; margin-bottom: 8px; opacity: .65;
+}
+.sc-title {
+  font-family: var(--font-d); font-size: 19px; margin-bottom: 10px;
+  line-height: 1.25;
+}
+.sc-body {
+  font-size: 13.5px; font-weight: 300; line-height: 1.8; opacity: .78;
+}
+.sc-deco {
+  position: absolute; right: -16px; bottom: -16px;
+  font-size: 80px; opacity: .08; transform: rotate(-15deg);
+  pointer-events: none; line-height: 1;
+}
+
+/* Variant styles */
+.sc-spring  { background: rgba(59,88,56,.85); color: var(--white); }
+.sc-summer  { background: rgba(181,90,40,.8);  color: var(--white); }
+.sc-autumn  { background: rgba(74,54,38,.8);   color: var(--straw); }
+.sc-winter  { background: rgba(42,30,18,.75);  color: var(--straw); }
+
+/* ─── WHAT TO PLANT NOW ─── */
+.plant-now-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.pn-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; border-radius: 10px;
+  background: var(--white); border: 1px solid rgba(42,30,18,.07);
+  cursor: pointer; text-decoration: none;
+  transition: border-color .15s, transform .15s;
+}
+.pn-card:hover { border-color: var(--sage-lt); transform: translateY(-1px); }
+.pn-em { font-size: 22px; flex-shrink: 0; }
+.pn-info {}
+.pn-name { font-size: 13px; font-weight: 500; color: var(--soil); }
+.pn-timing { font-family: var(--font-m); font-size: 9.5px; color: var(--sage); margin-top: 1px; }
+.pn-add {
+  margin-left: auto; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--cream); color: var(--bark-lt);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0; border: 1px solid rgba(42,30,18,.08);
+  transition: background .15s, color .15s;
+}
+.pn-card:hover .pn-add { background: var(--moss); color: var(--white); border-color: var(--moss); }
+
+/* ─── RECENT NOTES FEED ─── */
+.notes-feed { display: flex; flex-direction: column; gap: 0; }
+.nf-entry {
+  display: flex; gap: 14px; padding: 14px 0;
+  border-bottom: 1px solid rgba(42,30,18,.06); align-items: flex-start;
+}
+.nf-entry:last-child { border-bottom: none; }
+.nf-em { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.nf-body { flex: 1; min-width: 0; }
+.nf-meta { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; flex-wrap: wrap; }
+.nf-plant { font-size: 12.5px; font-weight: 500; color: var(--soil); }
+.nf-date  { font-family: var(--font-m); font-size: 9px; color: var(--sage-lt); }
+.nf-type-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.nf-text  { font-size: 13px; color: var(--bark-lt); font-weight: 300; line-height: 1.7; }
+
+.no-notes {
+  font-size: 13px; color: var(--sage-lt); font-weight: 300;
+  padding: 12px 0; font-style: italic;
+}
+
+/* ═══════════════════════════════════════
+   RIGHT COLUMN — sidebar info
+═══════════════════════════════════════ */
+.aside { padding-left: 40px; display: flex; flex-direction: column; gap: 32px; }
+
+/* ─── SEED CALENDAR ─── */
+.seed-cal {}
+.scal-months {
+  display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin-bottom: 6px;
+}
+.scal-m {
+  font-family: var(--font-m); font-size: 7.5px; color: var(--sage-lt);
+  text-align: center; padding: 2px 0;
+}
+.scal-m.cur { color: var(--moss); font-weight: 500; }
+
+.scal-plant {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 7px;
+}
+.scal-em { font-size: 14px; flex-shrink: 0; width: 20px; text-align: center; }
+.scal-bars { flex: 1; display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; }
+.scal-bar {
+  height: 8px; border-radius: 2px;
+  background: rgba(42,30,18,.06);
+  transition: transform .15s;
+}
+.scal-bar.sow    { background: rgba(200,160,58,.45); }
+.scal-bar.plant  { background: rgba(59,88,56,.5); }
+.scal-bar.harv   { background: rgba(181,90,40,.55); }
+.scal-bar.cur-m  { outline: 1.5px solid rgba(42,30,18,.2); outline-offset: -1px; }
+
+.scal-legend {
+  display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap;
+}
+.scl-item { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--bark-lt); }
+.scl-swatch { width: 12px; height: 6px; border-radius: 2px; }
+
+/* ─── KNOWLEDGE CARD ─── */
+.know-card {
+  padding: 22px; background: var(--white);
+  border: 1px solid rgba(42,30,18,.07); border-radius: 12px;
+}
+.kc-label {
+  font-family: var(--font-m); font-size: 8.5px;
+  color: var(--sage); letter-spacing: 1.5px; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.kc-title {
+  font-family: var(--font-d); font-size: 16px; color: var(--soil);
+  margin-bottom: 8px; line-height: 1.3;
+}
+.kc-text {
+  font-size: 12.5px; color: var(--bark-lt); font-weight: 300;
+  line-height: 1.75; margin-bottom: 14px;
+}
+.kc-link {
+  font-family: var(--font-m); font-size: 9.5px;
+  color: var(--moss); text-decoration: none; letter-spacing: .5px;
+  display: flex; align-items: center; gap: 5px;
+  transition: gap .18s;
+}
+.kc-link:hover { gap: 9px; }
+
+/* ─── SEED HERITAGE ─── */
+.heritage-card {
+  padding: 22px; border-radius: 12px;
+  background: var(--soil); color: var(--straw);
+  position: relative; overflow: hidden;
+}
+.heritage-card::before {
+  content: ''; position: absolute; right: -30px; bottom: -30px;
+  width: 120px; height: 120px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.06);
+}
+.hc-label {
+  font-family: var(--font-m); font-size: 8.5px;
+  color: var(--sage-lt); letter-spacing: 1.5px; text-transform: uppercase;
+  margin-bottom: 12px; opacity: .7;
+}
+.hc-title {
+  font-family: var(--font-d); font-size: 15px; color: var(--white);
+  margin-bottom: 8px; line-height: 1.35;
+}
+.hc-text {
+  font-size: 12px; color: rgba(230,215,176,.6);
+  font-weight: 300; line-height: 1.7; margin-bottom: 14px;
+}
+.hc-link {
+  font-family: var(--font-m); font-size: 9.5px; color: var(--sage-lt);
+  text-decoration: none; display: flex; align-items: center; gap: 5px;
+  transition: gap .18s;
+}
+.hc-link:hover { gap: 9px; }
+
+/* ─── NAVIGATION QUICK LINKS ─── */
+.quick-links { display: flex; flex-direction: column; gap: 6px; }
+.ql {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: 10px;
+  background: var(--white); border: 1px solid rgba(42,30,18,.07);
+  text-decoration: none; transition: border-color .15s, transform .15s;
+}
+.ql:hover { border-color: var(--sage-lt); transform: translateX(3px); }
+.ql-em { font-size: 18px; }
+.ql-text { flex: 1; }
+.ql-name { font-size: 13px; font-weight: 500; color: var(--soil); }
+.ql-sub  { font-size: 11px; color: var(--sage); font-weight: 300; margin-top: 1px; }
+.ql-arrow { color: var(--sage-lt); font-size: 12px; }
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  background: rgba(42,30,18,.9); color: var(--straw);
+  padding: 9px 20px; border-radius: 100px; font-size: 13px;
+  font-family: var(--font-b); opacity: 0; transition: opacity .22s;
+  pointer-events: none; z-index: 9000; white-space: nowrap;
+}
+.toast.on { opacity: 1; }
+
+/* ═══════════════════════════════════════
+   FADE ANIMATIONS
+═══════════════════════════════════════ */
+.fade-up {
+  opacity: 0; transform: translateY(16px);
+  transition: opacity .6s var(--ease), transform .6s var(--ease);
+}
+.fade-up.visible { opacity: 1; transform: translateY(0); }
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .main { grid-template-columns: 1fr; padding: 28px 24px; }
+  .feed { padding-right: 0; border-right: none; padding-bottom: 40px; border-bottom: 1px solid rgba(42,30,18,.07); margin-bottom: 0; }
+  .aside { padding-left: 0; }
+  .plant-now-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .nav { padding: 0 18px; }
+  .nav-links { display: none; }
+  .hero { grid-template-columns: 1fr; padding: 36px 20px 28px; gap: 20px; }
+  .season-panel { align-items: flex-start; }
+  .main { padding: 24px 18px; gap: 24px; }
+  .plant-now-grid { grid-template-columns: 1fr; }
+  .hero-title { font-size: 30px; letter-spacing: -1px; }
+
+  /* Tap-friendly status and reminder cards */
+  .tr-item { padding: 16px 16px; }
+  .tr-text { font-size: 14.5px; line-height: 1.55; }
+  .plant-status-card { padding: 18px; }
+  .psc-em { font-size: 32px; }
+  .psc-name { font-size: 18px; }
+  .psc-action { font-size: 14px; line-height: 1.7; }
+  .pn-card { padding: 16px 16px; min-height: 56px; }
+  .pn-em { font-size: 26px; }
+  .pn-name { font-size: 14px; }
+  .ge-btn { padding: 13px 26px; font-size: 14px; min-height: 44px; }
+  .ql { padding: 14px 16px; min-height: 56px; }
+  .ql-name { font-size: 14px; }
+  .nf-entry { padding: 16px 0; }
+  .nf-text { font-size: 14px; }
+  .seasonal-card { padding: 22px 22px; }
+  .sc-title { font-size: 20px; }
+  .sc-body { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Shared modules -->
+<script src="plants.js"></script>
+<script src="storage.js"></script>
+<!-- Façade régionale : DOIT être chargée avant regions.js + i18n.js -->
+<script src="verdesia_region_config.js"></script>
+<script src="verdesia_plan.js"></script>
+<script src="regions.js"></script>
+<script src="i18n.js"></script>
+<script src="garden.js"></script>
+<script src="onboarding.js"></script>
+<script src="verdesia_profile.js" defer></script>
+
+<div class="toast" id="toast"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="verdesia_landing.html" class="nav-logo">Verd<em>ésia</em></a>
+  <div class="nav-links">
+    <a class="nav-link active" href="verdesia_today.html" id="nlHoy">Hoy</a>
+    <a class="nav-link" href="verdesia_jardin.html" id="nlJardin">Mi jardín</a>
+    <a class="nav-link" href="verdesia_explorer.html" id="nlPlantas">Plantas</a>
+    <a class="nav-link" href="verdesia_brote.html" id="nlDiag">Lectura del huerto</a>
+    <a class="nav-link" href="verdesia_observaciones.html" id="nlMemoria">Memoria</a>
+  </div>
+  <div class="nav-r"></div>
+</nav>
+
+<!-- HERO -->
+<div class="hero" id="hero">
+  <div class="hero-wash" id="heroWash"></div>
+  <div class="hero-left">
+    <div class="hero-dateline">
+      <div class="live-dot"></div>
+      <span id="heroDateline">Lunes, 22 Sep 2025 · Santiago, Chile</span>
+    </div>
+    <div class="monthly-obs" id="monthlyObs"></div>
+    <h1 class="hero-title" id="heroTitle">Buenos días —<br><em id="heroSeason">es primavera</em></h1>
+    <p class="hero-context" id="heroContext">
+      En Santiago, el suelo se calienta esta semana. <strong>Es el momento de tus primeros semis de tomate y albahaca bajo cubierta.</strong> Las heladas de agosto ya pasaron.
+    </p>
+  </div>
+  <div class="season-panel">
+    <div class="season-badge">
+      <div class="sb-icon" id="sbIcon">🌸</div>
+      <div class="sb-info">
+        <div class="sb-name" id="sbName">Primavera</div>
+        <div class="sb-months" id="sbMonths">Sep · Oct · Nov</div>
+      </div>
+    </div>
+    <div class="month-strip" id="monthStrip"></div>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="main">
+
+  <!-- ══════════════════ FEED (left) -->
+  <div class="feed">
+
+    <!-- Para hoy — contextual reminders -->
+    <section class="fade-up" id="todaySection" style="display:none">
+      <div class="feed-label"><span id="flToday">Para hoy</span></div>
+      <div class="today-reminders" id="todayReminders">
+        <!-- rendered by JS -->
+      </div>
+    </section>
+
+    <!-- My garden -->
+    <section class="fade-up">
+      <div class="feed-label"><span id="flGarden">Mi jardín esta semana</span></div>
+      <div class="garden-status-grid" id="gardenStatusGrid">
+        <!-- rendered by JS -->
+      </div>
+    </section>
+
+    <!-- Seasonal advice -->
+    <section class="fade-up">
+      <div class="feed-label"><span id="flSeason">Esta temporada en Santiago</span></div>
+      <div class="seasonal-card" id="seasonalCard">
+        <div class="sc-eyebrow" id="scEyebrow">Primavera austral · Sep–Nov</div>
+        <div class="sc-title"   id="scTitle">El jardín despierta</div>
+        <p class="sc-body"      id="scBody">Las temperaturas suben, el suelo se calienta. Es el momento de preparar los semilleros de tomate, pimiento y albahaca bajo cubierta. Las plantas de invierno — lechugas, zanahorias — aún pueden cosecharse.</p>
+        <div class="sc-deco"    id="scDeco">🌸</div>
+      </div>
+    </section>
+
+    <!-- What to plant now -->
+    <section class="fade-up">
+      <div class="feed-label"><span id="flNow">Qué sembrar ahora en Santiago</span></div>
+      <div class="plant-now-grid" id="plantNowGrid">
+        <!-- rendered by JS -->
+      </div>
+    </section>
+
+    <!-- Recent notes from my garden -->
+    <section class="fade-up">
+      <div class="feed-label"><span id="flNotes">Mis últimas observaciones</span></div>
+      <div class="notes-feed" id="notesFeed">
+        <!-- rendered by JS -->
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ══════════════════ ASIDE (right) -->
+  <aside class="aside">
+
+    <!-- Seed calendar mini -->
+    <div class="fade-up">
+      <div class="feed-label"><span id="flCal">Calendario de siembras</span></div>
+      <div class="seed-cal">
+        <div class="scal-months" id="scalMonths"></div>
+        <div id="scalPlants"></div>
+        <div class="scal-legend">
+          <div class="scl-item"><div class="scl-swatch" style="background:rgba(200,160,58,.5)"></div><span id="legSow">Siembra</span></div>
+          <div class="scl-item"><div class="scl-swatch" style="background:rgba(59,88,56,.55)"></div><span id="legPlant">Trasplante</span></div>
+          <div class="scl-item"><div class="scl-swatch" style="background:rgba(181,90,40,.55)"></div><span id="legHarv">Cosecha</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Knowledge card -->
+    <div class="know-card fade-up" id="knowCard">
+      <!-- rendered by JS -->
+    </div>
+
+    <!-- Heritage card -->
+    <div class="heritage-card fade-up">
+      <div class="hc-label" id="hcLabel">Patrimonio semillero</div>
+      <div class="hc-title" id="hcTitle">Guardar semillas es transmitir vida</div>
+      <p class="hc-text" id="hcText">Cada semilla guardada es un gesto de continuidad. En Chile, miles de variedades locales —tomate limache, zapallo panare, ají cacho de cabra— sobreviven gracias a los jardineros que las preservan.</p>
+      <a href="verdesia_plante.html?id=tomate_limache#seedsSection" class="hc-link" id="hcLink">Ver guía de recolección →</a>
+    </div>
+
+    <!-- Quick links -->
+    <div class="fade-up">
+      <div class="feed-label"><span id="flLinks">Accesos rápidos</span></div>
+      <div class="quick-links" id="quickLinks">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   MÓDULOS COMPARTIDOS
+══════════════════════════════════════════════ */
+const Garden     = window.SemencaGarden;
+const Storage    = window.SemencaStorage;
+const I18n       = window.SemencaI18n;
+const CATALOGUE  = window.SEMENCA_PLANTS;
+const NOTE_TYPES = window.SEMENCA_NOTE_TYPES;
+
+const MONTHS_ES = Garden.MONTHS_ES;
+const MONTHS_FR = Garden.MONTHS_FR;
+const M = () => Garden.months(I18n.getLang());
+
+const loadGarden     = () => Storage.loadGarden();
+const getSeason      = (m) => Garden.getSeason(m);
+const daysSince      = (d) => Garden.daysSince(d);
+const getStageIndex  = (p, d) => Garden.getStageIndex(p, d);
+const getProgress    = (p, d) => Garden.getStageProgress(p, d);
+
+/* Atajos i18n */
+const TODAY = (k, p) => I18n.t('today.' + k, p);
+const ACT   = (k)    => I18n.t('actions.' + k);
+const NAV   = (k)    => I18n.t('nav.' + k);
+
+/* SEASON_DATA — solo aspectos UI no traducibles (icono + clase CSS + wash).
+   El texto (eyebrow/title/body/context/name/months/greeting) viene de i18n. */
+const SEASON_UI = {
+  spring: { icon:'🌸', cls:'sc-spring', washColor:'rgba(59,88,56,.03)' },
+  summer: { icon:'☀️', cls:'sc-summer', washColor:'rgba(181,90,40,.03)' },
+  autumn: { icon:'🍂', cls:'sc-autumn', washColor:'rgba(74,54,38,.03)'  },
+  winter: { icon:'🌧', cls:'sc-winter', washColor:'rgba(42,30,18,.03)'  },
+};
+function seasonalData(s) {
+  const cap = s.charAt(0).toUpperCase() + s.slice(1);
+  return Object.assign({}, SEASON_UI[s], {
+    name:    I18n.t('common.season.'         + s),
+    months:  I18n.t('common.seasonMonths.'   + s),
+    greeting:I18n.t('common.seasonGreetingMap.' + s),
+    eyebrow: TODAY('seasonal' + cap + 'Eyebrow'),
+    title:   TODAY('seasonal' + cap + 'Title'),
+    body:    TODAY('seasonal' + cap + 'Body'),
+    context: TODAY('seasonal' + cap + 'Context'),
+  });
+}
+
+/* (legado — reemplazado por seasonalData() y el árbol i18n)
+const _LEGACY_SEASON_DATA = {
+  fr:{
+    spring: {
+      name:'Printemps', months:'Sep · Oct · Nov', icon:'🌸', cls:'sc-spring',
+      title:'Le jardin se réveille',
+      eyebrow:'Printemps austral · Sep–Nov',
+      body:'Les températures montent, le sol se réchauffe. C\'est le moment de préparer les semis de tomate, poivron et basilic sous abri. Les légumes d\'hiver — laitue, carottes — sont encore en cours de récolte.',
+      context:'Le sol se réchauffe à Santiago. <strong>C\'est le moment de tes premiers semis de tomate et basilic sous abri.</strong> Les gelées d\'août sont derrière toi.',
+      greeting:'c\'est le printemps',
+      washColor:'rgba(59,88,56,.03)',
+    },
+    summer: {
+      name:'Été', months:'Déc · Jan · Fév', icon:'☀️', cls:'sc-summer',
+      title:'La pleine saison productive',
+      eyebrow:'Été austral · Déc–Fév',
+      body:'Le potager est en pleine production. Tomates, courges et poivrons arrivent à maturité. C\'est la saison de la collecte des semences et des premières conserves.',
+      context:'Les tomates et courgettes sont au pic. <strong>Récoltez chaque jour et commencez à collecter vos premières semences.</strong> La chaleur est forte — arrosez tôt le matin.',
+      greeting:'c\'est l\'été',
+      washColor:'rgba(181,90,40,.03)',
+    },
+    autumn: {
+      name:'Automne', months:'Mar · Avr · Mai', icon:'🍂', cls:'sc-autumn',
+      title:'Temps de récolte et préparation',
+      eyebrow:'Automne austral · Mar–Mai',
+      body:'Les dernières récoltes d\'été, la préparation du sol pour l\'hiver. Planter ails et oignons, semer les légumes d\'hiver — laitue, carottes, épinards. Collecter et sécher les semences.',
+      context:'Les nuits fraîchissent à Santiago. <strong>Plantez l\'ail et les oignons maintenant</strong>, et semez les légumes d\'hiver sous abri.',
+      greeting:'c\'est l\'automne',
+      washColor:'rgba(74,54,38,.03)',
+    },
+    winter: {
+      name:'Hiver', months:'Jun · Jul · Aoû', icon:'🌧', cls:'sc-winter',
+      title:'Patience et préparation',
+      eyebrow:'Hiver austral · Jun–Aoû',
+      body:'Le sol se repose. Laitue, épinards et carottes résistent au froid doux de Santiago. Un bon moment pour préparer le compost, planifier les semis du printemps et consulter les fiches plantes.',
+      context:'Les nuits sont fraîches mais le sol de Santiago reste vivant. <strong>Laitue et épinards poussent bien.</strong> Préparez vos semences pour septembre.',
+      greeting:'c\'est l\'hiver',
+      washColor:'rgba(42,30,18,.03)',
+    },
+  },
+  es:{
+    spring: {
+      name:'Primavera', months:'Sep · Oct · Nov', icon:'🌸', cls:'sc-spring',
+      title:'El jardín despierta',
+      eyebrow:'Primavera austral · Sep–Nov',
+      body:'Las temperaturas suben, el suelo se calienta. Es el momento de preparar los semilleros de tomate, pimiento y albahaca bajo cubierta. Las plantas de invierno — lechugas, zanahorias — aún pueden cosecharse.',
+      context:'El suelo se calienta en Santiago. <strong>Es el momento de tus primeros semis de tomate y albahaca bajo cubierta.</strong> Las heladas de agosto ya pasaron.',
+      greeting:'es primavera',
+      washColor:'rgba(59,88,56,.03)',
+    },
+    summer: {
+      name:'Verano', months:'Dic · Ene · Feb', icon:'☀️', cls:'sc-summer',
+      title:'La plena temporada productiva',
+      eyebrow:'Verano austral · Dic–Feb',
+      body:'El huerto está en plena producción. Tomates, zapallos y pimientos llegan a la madurez. Es la temporada de recolectar semillas y hacer las primeras conservas.',
+      context:'Los tomates y zapallos están en su pico. <strong>Cosecha cada día y comienza a recolectar tus primeras semillas.</strong> El calor es fuerte — riega temprano en la mañana.',
+      greeting:'es verano',
+      washColor:'rgba(181,90,40,.03)',
+    },
+    autumn: {
+      name:'Otoño', months:'Mar · Abr · May', icon:'🍂', cls:'sc-autumn',
+      title:'Tiempo de cosecha y preparación',
+      eyebrow:'Otoño austral · Mar–May',
+      body:'Las últimas cosechas de verano, la preparación del suelo para el invierno. Plantar ajos y cebollas, sembrar los vegetales de invierno — lechuga, zanahorias, espinacas. Recolectar y secar semillas.',
+      context:'Las noches se enfrían en Santiago. <strong>Planta el ajo y las cebollas ahora</strong>, y siembra los vegetales de invierno bajo cubierta.',
+      greeting:'es otoño',
+      washColor:'rgba(74,54,38,.03)',
+    },
+    winter: {
+      name:'Invierno', months:'Jun · Jul · Ago', icon:'🌧', cls:'sc-winter',
+      title:'Paciencia y preparación',
+      eyebrow:'Invierno austral · Jun–Ago',
+      body:'El suelo descansa. Lechugas, espinacas y zanahorias resisten el frío suave de Santiago. Un buen momento para preparar el compost, planificar las siembras de primavera y consultar las fichas de plantas.',
+      context:'Las noches son frescas pero el suelo de Santiago sigue vivo. <strong>Lechugas y espinacas crecen bien.</strong> Prepara tus semillas para septiembre.',
+      greeting:'es invierno',
+      washColor:'rgba(42,30,18,.03)',
+    },
+  },
+};
+
+*/
+
+/* SOW_NOW — solo IDs + clave i18n del label de siembra */
+const SOW_NOW = {
+  spring: [
+    { id:'tomate',           labelKey:'today.sowSpring1' },
+    { id:'albahaca',         labelKey:'today.sowSpring2' },
+    { id:'aji_verde',        labelKey:'today.sowSpring3' },
+    { id:'zapallo_italiano', labelKey:'today.sowSpring4' },
+    { id:'cilantro',         labelKey:'today.sowSpring5' },
+    { id:'cebollin',         labelKey:'today.sowSpring6' },
+  ],
+  summer: [
+    { id:'poroto_verde', labelKey:'today.sowSummer1' },
+    { id:'lechuga',      labelKey:'today.sowSummer2' },
+    { id:'acelga',       labelKey:'today.sowSummer3' },
+    { id:'cebollin',     labelKey:'today.sowSummer4' },
+  ],
+  autumn: [
+    { id:'lechuga',   labelKey:'today.sowAutumn1' },
+    { id:'cilantro',  labelKey:'today.sowAutumn2' },
+    { id:'acelga',    labelKey:'today.sowAutumn3' },
+    { id:'zanahoria', labelKey:'today.sowAutumn4' },
+    { id:'frutilla',  labelKey:'today.sowAutumn5' },
+    { id:'perejil',   labelKey:'today.sowAutumn6' },
+  ],
+  winter: [
+    { id:'lechuga',    labelKey:'today.sowWinter1' },
+    { id:'acelga',     labelKey:'today.sowWinter2' },
+    { id:'perejil',    labelKey:'today.sowWinter3' },
+    { id:'manzanilla', labelKey:'today.sowWinter4' },
+  ],
+};
+
+/* KNOWLEDGE — helper que lee del árbol i18n */
+function knowledgeData(s) {
+  const cap = s.charAt(0).toUpperCase() + s.slice(1);
+  return {
+    label: TODAY('knowledge' + cap + 'Label'),
+    title: TODAY('knowledge' + cap + 'Title'),
+    text:  TODAY('knowledge' + cap + 'Text'),
+  };
+}
+
+/* (legado — reemplazado por knowledgeData())
+const _LEGACY_KNOWLEDGE = {
+  spring:{
+    fr:{label:'Conseil du moment',title:'Accélérer la germination',text:'En septembre, les températures nocturnes de Santiago restent fraîches. Placer les semis sur une surface chaude (dessus du réfrigérateur) ou sous cloche. La tomate a besoin de 22°C minimum pour germer.'},
+    es:{label:'Consejo del momento',title:'Acelerar la germinación',text:'En septiembre, las temperaturas nocturnas en Santiago siguen siendo frescas. Coloca los semilleros sobre una superficie cálida o bajo un techo de plástico. El tomate necesita mínimo 22°C para germinar.'},
+  },
+  summer:{
+    fr:{label:'Conseil du moment',title:'Collecter les semences',text:'L\'été austral est la saison idéale pour collecter les semences de tomate et de poivron. Choisir les plus beaux fruits sur les plants les plus vigoureux, laisser légèrement sur-mûrir.'},
+    es:{label:'Consejo del momento',title:'Recolectar semillas',text:'El verano austral es la temporada ideal para recolectar semillas de tomate y pimiento. Elegir los frutos más hermosos de las plantas más vigorosas, dejar sobremadurar ligeramente.'},
+  },
+  autumn:{
+    fr:{label:'Conseil du moment',title:'Préparer le sol pour l\'hiver',text:'En mars–avril, amender le sol épuisé par l\'été : compost mûr et corne broyée. Semer les engrais verts (moutarde, avoine) pour protéger le sol pendant l\'hiver austral.'},
+    es:{label:'Consejo del momento',title:'Preparar el suelo para el invierno',text:'En marzo–abril, enmendar el suelo agotado por el verano: compost maduro y cuerno molido. Sembrar abonos verdes (mostaza, avena) para proteger el suelo durante el invierno austral.'},
+  },
+  winter:{
+    fr:{label:'Conseil du moment',title:'Préparer le compost',text:'L\'hiver austral est la saison du compost. Alterner couches humides (déchets de cuisine) et sèches (feuilles, carton). Un compost bien conduit sera prêt pour les semis du printemps.'},
+    es:{label:'Consejo del momento',title:'Preparar el compost',text:'El invierno austral es la temporada del compost. Alternar capas húmedas (residuos de cocina) y secas (hojas, cartón). Un compost bien llevado estará listo para las siembras de primavera.'},
+  },
+};
+
+*/
+
+/* ══════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════ */
+// Atajos legacy → ya no se usan, pero mantenemos `lang` como getter
+Object.defineProperty(window, 'lang', { get: () => I18n.getLang() });
+const ptext = (obj) => I18n.getLocalized(obj);
+
+/* ══════════════════════════════════════════════
+   OBSERVACIÓN MENSUAL — micro-copy editorial
+══════════════════════════════════════════════ */
+const MONTHLY_OBS = {
+  es: [
+    'Enero. El huerto pide riego al amanecer. Las frutillas maduran rápido.',
+    'Febrero. Verano tardío. Comienza la cosecha del choclo y los primeros zapallos.',
+    'Marzo. El otoño llega lento. Las mañanas empiezan a oler a tierra húmeda.',
+    'Abril. Las castañas aparecen en las ferias. La luz se vuelve más baja y dorada.',
+    'Mayo. Caen las primeras lluvias. El suelo se oscurece y respira.',
+    'Junio. Las mañanas siguen frías en el huerto. El jardín descansa.',
+    'Julio. Hay niebla al amanecer. Tiempo de podar los árboles dormidos.',
+    'Agosto. Bajo cubierta, los primeros almácigos se mueven hacia la luz.',
+    'Septiembre. El suelo se calienta. Las flores de durazno abren primero.',
+    'Octubre. Las heladas se alejan. Se puede plantar en tierra firme.',
+    'Noviembre. Primavera plena. Las primeras flores de tomate empiezan a abrirse.',
+    'Diciembre. Comienza el verano. El maqui empieza a madurar en el sur.',
+  ],
+  fr: [
+    "Janvier. Le jardin réclame l'eau de l'aube. Les fraises mûrissent vite.",
+    "Février. Fin d'été. La récolte du maïs et des premières courges commence.",
+    "Mars. L'automne s'installe lentement. Les matins sentent la terre humide.",
+    'Avril. Les châtaignes paraissent aux marchés. La lumière se fait plus basse.',
+    "Mai. Les premières pluies tombent. Le sol s'assombrit et respire.",
+    'Juin. Les matins restent froids dans le jardin. Le jardin se repose.',
+    "Juillet. Brouillard à l'aube. Le temps de tailler les arbres endormis.",
+    'Août. Sous abri, les premiers semis cherchent la lumière.',
+    "Septembre. La terre se réchauffe. Les fleurs de pêcher s'ouvrent d'abord.",
+    "Octobre. Les gelées s'éloignent. On peut planter en pleine terre.",
+    "Novembre. Plein printemps. Les premières fleurs de tomate s'ouvrent.",
+    "Décembre. L'été commence. Le maqui mûrit dans le sud.",
+  ],
+};
+
+/* ══════════════════════════════════════════════
+   MEMORY CALLBACK — continuité émotionnelle calme
+
+   Si l'utilisateur a sauvegardé des observations passées, on prépende
+   une ligne qui reconnecte présent et passé. Sans urgence, sans
+   notification, sans chiffres. Juste : Verdésia se souvient avec toi.
+
+   Échelle :
+     < 30 j     → rien (l'observation est trop fraîche)
+     30–60 j    → "Hace un mes que observas este huerto."
+     2–5 meses  → "Hace {n} meses observabas este espacio."
+     ≥ 6 meses  → "Tu huerto ha cambiado mucho desde tus primeras observaciones."
+     ≥ 12 meses → "Hace más de un año empezaste a observar tu jardín."
+
+   Defensive : si VerdesiaObservations n'est pas chargé (page Hoy
+   ne le charge pas par défaut), lecture directe du localStorage.
+══════════════════════════════════════════════ */
+function buildMemoryCallback() {
+  try {
+    let list = null;
+    if (window.VerdesiaObservations && typeof window.VerdesiaObservations.list === 'function') {
+      list = window.VerdesiaObservations.list();
+    } else {
+      const raw = localStorage.getItem('verdesia_observations');
+      list = raw ? JSON.parse(raw) : null;
+    }
+    if (!Array.isArray(list) || list.length === 0) return null;
+    // La plus ancienne observation
+    const oldest = list.slice().sort((a, b) =>
+      (a.createdAt || '').localeCompare(b.createdAt || ''))[0];
+    if (!oldest || !oldest.createdAt) return null;
+    const ageDays = Math.floor((Date.now() - new Date(oldest.createdAt).getTime()) / 86400000);
+    if (ageDays < 30) return null;
+    if (ageDays >= 365) return 'Hace más de un año empezaste a observar tu jardín.';
+    if (ageDays >= 180) return 'Tu huerto ha cambiado mucho desde tus primeras observaciones.';
+    const months = Math.floor(ageDays / 30);
+    if (months >= 2) return `Hace ${months} meses observabas este huerto.`;
+    return 'Hace un mes que observas este huerto.';
+  } catch { return null; }
+}
+
+/* ══════════════════════════════════════════════
+   RENDER HERO
+══════════════════════════════════════════════ */
+function renderHero() {
+  const now = new Date();
+  const seasonKey = getSeason(now.getMonth());
+  const sd = seasonalData(seasonKey);
+  const months = M();
+  const regionDisplay = (window.SemencaRegions && SemencaRegions.getCurrentZoneDisplay())
+    || (Storage.getZone() || 'Santiago');
+  const dateStr = Garden.formatToday(I18n.getLang()) + ' · ' +
+    regionDisplay + (I18n.getLang()==='fr' ? ', Chili' : ', Chile');
+  document.getElementById('heroDateline').textContent = dateStr;
+  const obs = (MONTHLY_OBS[I18n.getLang()] || MONTHLY_OBS.es)[now.getMonth()];
+  // Memory callback — Verdésia recuerda el jardín contigo. Si l'utilisateur a
+  // sauvegardé des observations passées de ≥ 30 jours, prépende une ligne
+  // calme reconnectant présent et passé. Probabiliste, jamais imposé.
+  const callback = buildMemoryCallback();
+  const target = document.getElementById('monthlyObs');
+  if (callback) {
+    target.innerHTML = '<span class="memory-callback">' +
+      callback.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) +
+      '</span>' +
+      obs.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+  } else {
+    target.textContent = obs;
+  }
+  document.getElementById('heroTitle').innerHTML =
+    `${TODAY('heroGreetingPrefix')}<br><em id="heroSeason">${sd.greeting}</em>`;
+  // Contexto regional si está disponible (sólo en español, el motor regional es es-CL);
+  // si no, cae al texto estacional genérico de siempre.
+  const regionalCtx = (I18n.getLang() === 'es' && window.SemencaRegions)
+    ? SemencaRegions.regionalContext(seasonKey)
+    : null;
+  document.getElementById('heroContext').innerHTML = regionalCtx || sd.context;
+  document.getElementById('heroWash').style.background =
+    `radial-gradient(ellipse at 80% 30%, ${sd.washColor} 0%, transparent 60%)`;
+
+  // Season badge
+  document.getElementById('sbIcon').textContent   = sd.icon;
+  document.getElementById('sbName').textContent   = sd.name;
+  document.getElementById('sbMonths').textContent = sd.months;
+
+  // Month strip
+  const strip = document.getElementById('monthStrip');
+  const monthInSeason = {
+    spring:[8,9,10], summer:[11,0,1], autumn:[2,3,4], winter:[5,6,7]
+  }[seasonKey];
+  strip.innerHTML = months.map((m,i) => {
+    let cls = 'ms-month';
+    if (i === now.getMonth()) cls += ' current';
+    else if (monthInSeason.includes(i)) cls += ' season-month';
+    return `<div class="${cls}" title="${m}">${m.slice(0,1)}</div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════
+   RECORDATORIOS CONTEXTUALES — “Para hoy”
+══════════════════════════════════════════════ */
+
+// Detecta si una transición de etapa ocurrió en los últimos N días
+function stageTransitionWithin(plant, days, withinDays) {
+  let cum = 0;
+  for (let i = 0; i < plant.stages.length; i++) {
+    cum += plant.stages[i].days || 0;
+    if (days >= cum - withinDays && days < cum && i+1 < plant.stages.length) {
+      // Acerca a la frontera con la siguiente etapa
+      return { fromIdx: i, toIdx: i+1, daysToTransition: cum - days };
+    }
+  }
+  return null;
+}
+
+function seasonalHint(season) {
+  const cap = season.charAt(0).toUpperCase() + season.slice(1);
+  const icons = { spring:'🌧', summer:'☀️', autumn:'🍂', winter:'🌧' };
+  return {
+    em:   icons[season],
+    text: TODAY('remSeason' + cap + 'Text'),
+    sub:  TODAY('remSeason' + cap + 'Sub'),
+  };
+}
+
+function generateReminders() {
+  const garden = loadGarden();
+  const month  = new Date().getMonth();
+  const season = getSeason(month);
+  const reminders = [];
+
+  // ─ Por planta ─
+  garden.forEach((entry, idx) => {
+    const plant = CATALOGUE.find(p => p.id === entry.plantId);
+    if (!plant) return;
+    const days     = daysSince(entry.sowDate);
+    const stageIdx = getStageIndex(plant, days);
+    const stage    = plant.stages[stageIdx];
+    const name     = I18n.getLocalized(plant.name);
+    const lname    = name.toLowerCase();
+
+    // Transición en los próximos 7 días
+    const trans = stageTransitionWithin(plant, days, 7);
+    if (trans) {
+      const next = plant.stages[trans.toIdx];
+      reminders.push({
+        em: next.icon || '🌿',
+        href: `verdesia_plante.html?id=${plant.id}`,
+        text: TODAY('remStageTransition', { plant: lname, stage: I18n.getLocalized(next.name).toLowerCase() }),
+        sub:  TODAY('remStageSub', { emoji: plant.emoji, plant: name, days }),
+        cls: ''
+      });
+    }
+
+    // En mes de cosecha
+    if ((plant.harvM||[])[month] && stageIdx === plant.stages.length - 1) {
+      reminders.push({
+        em: '🍅',
+        href: `verdesia_jardin.html`,
+        text: TODAY('remHarvest', { plant: lname }),
+        sub:  TODAY('remHarvestSub'),
+        cls: 'tr-harvest'
+      });
+    }
+
+    // Semillas (últimos meses de cosecha)
+    const harv = plant.harvM || [];
+    const harvMonths = harv.map((v,i) => v?i:-1).filter(i=>i>=0);
+    const lastHarv = harvMonths[harvMonths.length-1];
+    if (lastHarv === month && stageIdx === plant.stages.length - 1) {
+      reminders.push({
+        em: '🫘',
+        href: `verdesia_plante.html?id=${plant.id}#seedsSection`,
+        text: TODAY('remSeeds', { plant: lname }),
+        sub:  TODAY('remSeedsSub'),
+        cls: 'tr-seeds'
+      });
+    }
+  });
+
+  // ─ Estacional general ─ (siempre al final, máximo uno)
+  const hint = seasonalHint(season);
+  if (hint) {
+    reminders.push({
+      em: hint.em,
+      href: null,
+      text: hint.text,
+      sub: hint.sub,
+      cls: 'tr-season'
+    });
+  }
+
+  return reminders;
+}
+
+function renderReminders() {
+  const reminders = generateReminders();
+  const section   = document.getElementById('todaySection');
+  const container = document.getElementById('todayReminders');
+  if (!reminders.length) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+  document.getElementById('flToday').textContent = TODAY('flToday');
+  container.innerHTML = reminders.slice(0, 4).map(r => {
+    const inner = `
+      <div class="tr-em">${r.em}</div>
+      <div class="tr-body">
+        <div class="tr-text">${r.text}</div>
+        ${r.sub ? `<div class="tr-sub">${r.sub}</div>` : ''}
+      </div>`;
+    return r.href
+      ? `<a class="tr-item ${r.cls||''}" href="${r.href}">${inner}</a>`
+      : `<div class="tr-item ${r.cls||''}">${inner}</div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════
+   RENDER GARDEN STATUS
+══════════════════════════════════════════════ */
+function renderGardenStatus() {
+  const garden = loadGarden();
+  const grid = document.getElementById('gardenStatusGrid');
+
+  if (!garden.length) {
+    grid.innerHTML = `
+      <div class="garden-empty">
+        <div class="ge-icon">🪴</div>
+        <div class="ge-title" id="geTitle">${TODAY('gardenEmptyTitle')}</div>
+        <p class="ge-sub">${TODAY('gardenEmptySub')}</p>
+        <a href="verdesia_jardin.html" class="ge-btn">${TODAY('gardenEmptyCta')}</a>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = '';
+  garden.forEach((entry, idx) => {
+    const plant = CATALOGUE.find(p=>p.id===entry.plantId);
+    if (!plant) return;
+    const days     = daysSince(entry.sowDate);
+    const stageIdx = getStageIndex(plant, days);
+    const stage    = plant.stages[stageIdx];
+    const nextStage= plant.stages[Math.min(stageIdx+1, plant.stages.length-1)];
+    const progress = getProgress(plant, days);
+    const adviceArr= I18n.getLocalized(plant.advice && plant.advice[stageIdx]) || [];
+    const adviceText = Array.isArray(adviceArr) ? (adviceArr[0] || '') : (adviceArr || '');
+
+    const card = document.createElement('a');
+    card.href = 'verdesia_jardin.html';
+    card.className = 'plant-status-card';
+    const stageName = I18n.getLocalized(stage.name);
+    const dayLabel  = I18n.t('common.dayShort', { n: days });
+    card.innerHTML = `
+      <div class="psc-bar" style="background:var(--moss)"></div>
+      <div class="psc-em">${plant.emoji}</div>
+      <div class="psc-body">
+        <div class="psc-top">
+          <div class="psc-name">${I18n.getLocalized(plant.name)}</div>
+          <div class="psc-stage-badge" style="background:${stage.bg};color:var(--bark)">
+            ${stage.icon} ${stageName}
+          </div>
+        </div>
+        <p class="psc-action"><strong>${TODAY('thisWeek')}</strong> ${adviceText}</p>
+        <div class="psc-meta">
+          <div class="psc-progress-wrap">
+            <div class="psc-progress-bar">
+              <div class="psc-progress-fill" style="width:${progress}%;background:var(--moss)"></div>
+            </div>
+            <div class="psc-progress-label">
+              <span>${stageName}</span>
+              <span>${I18n.getLocalized(nextStage.name)}</span>
+            </div>
+          </div>
+          <div class="psc-days">${dayLabel}</div>
+          <div class="psc-zone">${entry.zone || Storage.getZone()}</div>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   RENDER SEASONAL CONTENT
+══════════════════════════════════════════════ */
+function renderSeasonal() {
+  const season = getSeason(new Date().getMonth());
+  const sd = seasonalData(season);
+
+  const card = document.getElementById('seasonalCard');
+  card.className = `seasonal-card ${sd.cls}`;
+  document.getElementById('scEyebrow').textContent = sd.eyebrow;
+  document.getElementById('scTitle').textContent   = sd.title;
+  document.getElementById('scBody').textContent    = sd.body;
+  document.getElementById('scDeco').textContent    = sd.icon;
+}
+
+/* ══════════════════════════════════════════════
+   RENDER WHAT TO PLANT NOW
+══════════════════════════════════════════════ */
+function renderPlantNow() {
+  const season = getSeason(new Date().getMonth());
+  // Lista regional (español, label directo) si existe; si no, fallback al SOW_NOW global con i18n.
+  const regional = (I18n.getLang() === 'es' && window.SemencaRegions)
+    ? SemencaRegions.regionalSowList(season)
+    : null;
+  const plants = regional || SOW_NOW[season] || [];
+  const grid = document.getElementById('plantNowGrid');
+  grid.innerHTML = '';
+  plants.forEach((entry) => {
+    const id = entry.id;
+    const p = CATALOGUE.find(x => x.id === id);
+    if (!p) return;
+    const timing = entry.label || (entry.labelKey ? I18n.t(entry.labelKey) : '');
+    const card = document.createElement('a');
+    card.href = `verdesia_jardin.html?add=${p.id}`;
+    card.className = 'pn-card';
+    card.innerHTML = `
+      <div class="pn-em">${p.emoji}</div>
+      <div class="pn-info">
+        <div class="pn-name">${I18n.getLocalized(p.name)}</div>
+        <div class="pn-timing">${timing}</div>
+      </div>
+      <div class="pn-add">+</div>`;
+    grid.appendChild(card);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   RENDER SEED CALENDAR (mini)
+══════════════════════════════════════════════ */
+function renderSeedCal() {
+  const months = M();
+  const cur = new Date().getMonth();
+
+  // Month labels
+  document.getElementById('scalMonths').innerHTML =
+    months.map((m,i) =>
+      `<div class="scal-m${i===cur?' cur':''}">${m.slice(0,1)}</div>`
+    ).join('');
+
+  // Mostrar las plantas más relevantes: primero las del jardín del usuario, luego
+  // un set diverso del catálogo. Máximo 7 filas para que sea legible.
+  const garden = loadGarden();
+  const inGarden = new Set(garden.map(e => e.plantId));
+  const userPlants = CATALOGUE.filter(p => inGarden.has(p.id));
+  const featured = ['tomate','albahaca','lechuga','cilantro','zanahoria','frutilla','zapallo_italiano'];
+  const extras = CATALOGUE.filter(p => featured.includes(p.id) && !inGarden.has(p.id));
+  const plantsToShow = [...userPlants, ...extras].slice(0, 7);
+
+  const container = document.getElementById('scalPlants');
+  container.innerHTML = '';
+  plantsToShow.forEach(p => {
+    const row = document.createElement('a');
+    row.href = `verdesia_plante.html?id=${p.id}`;
+    row.className = 'scal-plant';
+    row.style.cssText = 'text-decoration:none;color:inherit;cursor:pointer';
+    row.title = I18n.getLocalized(p.name);
+    row.innerHTML = `<div class="scal-em">${p.emoji}</div>
+      <div class="scal-bars">
+        ${(p.sowM||[]).map((v,i) => {
+          const harv  = (p.harvM||[])[i];
+          const plant = (p.plantM||[])[i];
+          let cls = 'scal-bar';
+          if (v)     cls += ' sow';
+          if (plant) cls += ' plant';
+          if (harv)  cls += ' harv';
+          if (i===cur) cls += ' cur-m';
+          return `<div class="${cls}"></div>`;
+        }).join('')}
+      </div>`;
+    container.appendChild(row);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   RENDER KNOWLEDGE CARD
+══════════════════════════════════════════════ */
+function renderKnowledge() {
+  const season = getSeason(new Date().getMonth());
+  const k = knowledgeData(season);
+  const seasonalPlantId = (SOW_NOW[season] && SOW_NOW[season][0]?.id) || 'tomate';
+  const card = document.getElementById('knowCard');
+  card.innerHTML = `
+    <div class="kc-label">${k.label}</div>
+    <div class="kc-title">${k.title}</div>
+    <p class="kc-text">${k.text}</p>
+    <a href="verdesia_plante.html?id=${seasonalPlantId}" class="kc-link" id="kcLink">${TODAY('viewFullSheet')}</a>`;
+}
+
+/* ══════════════════════════════════════════════
+   RENDER HERITAGE + STATIC STRINGS
+══════════════════════════════════════════════ */
+function renderStaticStrings() {
+  // Lectura fresca de la región actual en cada render (no cacheada).
+  // Las claves flSeason / flNow usan el placeholder {region} para que
+  // el texto se actualice instantáneamente al cambiar de zona.
+  const region = (window.SemencaRegions && SemencaRegions.getCurrentZoneDisplay())
+              || (Storage.getZone() || 'Santiago');
+  const map = {
+    flGarden: 'today.flGarden', flSeason: 'today.flSeason',
+    flNow:    'today.flNow',    flNotes:  'today.flNotes',
+    flCal:    'today.flCal',    flLinks:  'today.flLinks',
+    legSow:   'today.legSow',   legPlant: 'today.legPlant', legHarv: 'today.legHarv',
+    hcLabel:  'today.hcLabel',  hcTitle:  'today.hcTitle',  hcText:  'today.hcText',
+    hcLink:   'today.hcLink',
+    nlHoy:    'nav.today',      nlJardin: 'nav.garden',     nlPlantas:'nav.plants',
+  };
+  // Sólo flSeason y flNow necesitan el parámetro {region}. Las demás
+  // claves pasan params undefined sin efecto secundario.
+  const REGION_KEYS = new Set(['flSeason', 'flNow']);
+  Object.entries(map).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = REGION_KEYS.has(id) ? I18n.t(key, { region }) : I18n.t(key);
+  });
+  const lang = I18n.getLang();
+  document.querySelectorAll('.lb').forEach(b =>
+    b.classList.toggle('on', b.textContent === lang.toUpperCase()));
+  document.documentElement.lang = lang;
+}
+
+/* ══════════════════════════════════════════════
+   RENDER NOTES FEED
+══════════════════════════════════════════════ */
+function renderNotesFeed() {
+  const feed = document.getElementById('notesFeed');
+  const allNotes = Garden.getAllNotesEnriched(I18n.getLang());
+
+  if (!allNotes.length) {
+    feed.innerHTML = `<p class="no-notes">${TODAY('notesEmpty')}</p>`;
+    return;
+  }
+
+  feed.innerHTML = allNotes.slice(0, 5).map(n => `
+    <div class="nf-entry">
+      <div class="nf-em">${n.plantEmoji}</div>
+      <div class="nf-body">
+        <div class="nf-meta">
+          <span class="nf-plant">${n.plantName}</span>
+          <div class="nf-type-dot" style="background:${NOTE_TYPES[n.type]?.color||'var(--sage)'}"></div>
+          <span class="nf-date">${n.date}</span>
+        </div>
+        <div class="nf-text">${n.text}</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════════════════
+   RENDER QUICK LINKS
+══════════════════════════════════════════════ */
+function renderQuickLinks() {
+  // Elegir planta seasonally relevant para el link principal
+  const season = getSeason(new Date().getMonth());
+  const seasonalPlantId = (SOW_NOW[season] && SOW_NOW[season][0]?.id) || 'tomate';
+  const seasonalPlant = CATALOGUE.find(p => p.id === seasonalPlantId) || CATALOGUE[0];
+  const plantName = I18n.getLocalized(seasonalPlant.name);
+  const links = [
+    { href: 'verdesia_jardin.html',
+      em:   '🌱',
+      name: TODAY('qlMyGarden'),
+      sub:  TODAY('qlMyGardenSub') },
+    { href: `verdesia_plante.html?id=${seasonalPlant.id}`,
+      em:   seasonalPlant.emoji,
+      name: TODAY('qlPlantSheet'),
+      sub:  `${plantName} · ${seasonalPlant.latin}` },
+    { href: 'verdesia_plante.html?id=tomate_limache#seedsSection',
+      em:   '📖',
+      name: TODAY('qlSeedGuide'),
+      sub:  TODAY('qlSeedGuideSub') },
+  ];
+  document.getElementById('quickLinks').innerHTML = links.map(l => `
+    <a class="ql" href="${l.href}">
+      <span class="ql-em">${l.em}</span>
+      <div class="ql-text">
+        <div class="ql-name">${l.name}</div>
+        <div class="ql-sub">${l.sub}</div>
+      </div>
+      <span class="ql-arrow">→</span>
+    </a>`).join('');
+}
+
+/* ══════════════════════════════════════════════
+   INTERSECTION OBSERVER
+══════════════════════════════════════════════ */
+function observeReveal() {
+  if (!('IntersectionObserver' in window)) {
+    document.querySelectorAll('.fade-up, .reveal, .stage')
+      .forEach(el => el.classList.add('visible'));
+    return;
+  }
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+}
+
+/* ══════════════════════════════════════════════
+   LANG SWITCH — delega en SemencaI18n
+══════════════════════════════════════════════ */
+function setLang(l) {
+  I18n.setLang(l); // dispara onChange → renderAll
+}
+I18n.onChange(() => renderAll());
+// Re-render cuando el usuario cambia de región (desde verdesia_intro)
+window.addEventListener('semenca:zonechange', () => renderAll());
+// Re-render cuando el jardín se modifica (añadir/quitar/actualizar planta)
+window.addEventListener('semenca:gardenchange', () => renderAll());
+
+/* ══════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════ */
+let toastTmr;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(()=>el.classList.remove('on'), 2400);
+}
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+function renderAll() {
+  renderStaticStrings();
+  renderHero();
+  renderReminders();
+  renderGardenStatus();
+  renderSeasonal();
+  renderPlantNow();
+  renderSeedCal();
+  renderKnowledge();
+  renderNotesFeed();
+  renderQuickLinks();
+}
+
+renderAll();
+SemencaOnboarding.bootstrap();
+observeReveal();
+</script>
+<script>
+/* PWA: register service worker (silent, defensive) */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
