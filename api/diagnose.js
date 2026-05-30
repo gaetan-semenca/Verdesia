@@ -154,7 +154,57 @@ FAST MODE (when the user message mentions MODO RÁPIDO):
 - Do not include extra commentary outside the JSON.
 - ALWAYS finish the JSON completely — close every brace and bracket.
 - If you must shorten content, drop optional fields (set to "" or [])
-  rather than leaving the JSON unclosed.`;
+  rather than leaving the JSON unclosed.
+
+DEEP MODE (when the user message mentions MODO PROFUNDO):
+This is an extended ecosystem reading. The user has explicitly asked
+for a deeper botanical reading of the same garden image.
+
+- detected_plants: up to 8 (NEVER more, even if you see more plants).
+- garden_map_suggestions: up to 8 (same rule).
+- Prefer REPRESENTATIVE BIODIVERSITY over exhaustive identification.
+  Do not return many visually similar plants. If several plants look
+  similar, GROUP THEM under ONE representative entry and mention
+  "varias plantas similares cercanas" in its description.
+  BAD: lettuce, red lettuce, green lettuce, small lettuce, butter lettuce.
+  GOOD: lettuce (varias variedades cercanas), cabbage, kale, beet,
+        herbs, flower, root vegetable.
+- Prioritize DISTINCT plant families, forms, colors, and garden roles.
+- main_strengths, main_concerns, priority_actions, garden_improvements,
+  next_week_focus: up to 3 items each.
+- recommended_actions per plant: up to 3.
+- Each text field can be up to 200 characters (concise prose, no walls).
+
+ADDITIONALLY, in DEEP MODE include the following EXTRA top-level fields:
+
+  "garden_structure": {
+    "row_organization": string,        // ¿se ve en hileras, bloques, mezclado?
+    "companion_planting": string[],    // observed associations (max 4)
+    "density_patterns": string,        // overcrowded? spaced? mixed?
+    "visual_balance": string,          // calm reading of composition
+    "biodiversity_score": "low" | "medium" | "high",
+    "vertical_layering": string,       // ground, mid, vertical?
+    "soil_exposure": string            // covered, exposed, mulched?
+  },
+  "ecosystem_reading": {
+    "pollinator_friendliness": string,
+    "diversity_observation": string,
+    "monoculture_risk": string,
+    "overcrowding": string,
+    "moisture_balance": string,
+    "airflow": string
+  },
+  "seasonal_observations": {
+    "maturity_distribution": string,   // mixed stages? mostly mature?
+    "succession_planting": string,     // signs of staggered sowing?
+    "seasonal_balance": string         // single season or layered?
+  }
+
+In DEEP MODE:
+- Always include these three extra objects (use "" or [] for unknown values,
+  never omit the keys).
+- Tone stays calm, botanical, prudent — no marketing, no medical jargon.
+- Still close the JSON completely.`;
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
@@ -187,43 +237,58 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Imagen inválida.' });
     }
 
-    /* FAST MODE — défaut depuis 2026-05-30.
-       Le client envoie body.fast = true (cf. brote_app.js). Le serveur :
-       - injecte une consigne de concision dans le prompt
-       - cape les tokens de sortie pour borner la latence (gpt-4o-mini)
-       - le sanitize() en aval tronque déjà à 2 plantes / 2 actions.
-       Si body.fast === false (rare, ex: outil interne), on garde la
-       lecture longue. La forme du JSON reste identique — seul le volume
-       change, donc le client n'a rien à adapter. */
-    const fastMode = body && body.fast !== false; // default true
-    const userText = fastMode
-      ? 'Observa este huerto con calma y entrega la lectura en el JSON pedido. '
-        + 'MODO RÁPIDO: máximo 2 plantas en detected_plants, máximo 2 garden_map_suggestions, '
-        + 'máximo 2 elementos por lista (main_strengths, main_concerns, priority_actions, '
-        + 'garden_improvements, next_week_focus, recommended_actions). '
-        + 'Cada campo de texto máximo 120 caracteres. Frases cortas. '
-        + 'Cierra siempre el JSON completamente — termina todas las llaves y corchetes. '
-        + 'No identifiques sin necesidad — describe lo que ves.'
-      : 'Observa este huerto con calma y entrega la lectura en el JSON pedido. No identifiques sin necesidad — describe lo que ves.';
+    /* Trois modes de lecture :
+       - "deep" (explicit) : Lectura botánica completa — riche, biodiversité,
+                             ajoute garden_structure + ecosystem_reading +
+                             seasonal_observations. Tokens 3000, ~15-25s.
+       - "fast" (défaut)   : lecture rapide, 2 plantes, 1100 tokens, ~3-8s.
+       - body.fast === false (compat outil interne) : lecture longue mais
+                                                      schéma v3 standard. */
+    const deepMode = body && body.mode === 'deep';
+    const fastMode = !deepMode && (body && body.fast !== false); // default true
+
+    const userText = deepMode
+      ? 'Observa este huerto con calma y entrega una LECTURA BOTÁNICA COMPLETA en el JSON pedido. '
+        + 'MODO PROFUNDO: máximo 8 plantas en detected_plants, máximo 8 garden_map_suggestions. '
+        + 'PRIORIZA LA BIODIVERSIDAD REPRESENTATIVA: si ves varias plantas similares (ej: 5 lechugas), '
+        + 'AGRUPA bajo UNA entrada representativa con la nota "varias plantas similares cercanas" y dedica '
+        + 'las demás entradas a la diversidad real (col, kale, betarraga, hierbas, flores, raíces). '
+        + 'Prefiere familias y formas distintas en lugar de variantes de la misma planta. '
+        + 'Incluye OBLIGATORIAMENTE los campos extra: garden_structure, ecosystem_reading, '
+        + 'seasonal_observations (con todos sus sub-campos, vacíos si no se observan). '
+        + 'Cada texto máximo 200 caracteres. Listas máximo 3 items. '
+        + 'Tono calmo, botánico, prudente. Cierra siempre el JSON completamente.'
+      : fastMode
+        ? 'Observa este huerto con calma y entrega la lectura en el JSON pedido. '
+          + 'MODO RÁPIDO: máximo 2 plantas en detected_plants, máximo 2 garden_map_suggestions, '
+          + 'máximo 2 elementos por lista (main_strengths, main_concerns, priority_actions, '
+          + 'garden_improvements, next_week_focus, recommended_actions). '
+          + 'Cada campo de texto máximo 120 caracteres. Frases cortas. '
+          + 'Cierra siempre el JSON completamente — termina todas las llaves y corchetes. '
+          + 'No identifiques sin necesidad — describe lo que ves.'
+        : 'Observa este huerto con calma y entrega la lectura en el JSON pedido. No identifiques sin necesidad — describe lo que ves.';
 
     const payload = {
       model: MODEL,
       response_format: { type: 'json_object' },
       temperature: 0.2,
       // max_tokens : compromis entre latence et complétude du JSON.
-      // 700 s'est avéré trop bas en fast mode (JSON tronqué dans
-      // garden_map_suggestions). On remonte avec marge confortable :
-      //   - fast : 1100 (≈ 50% au-dessus du payload réel observé)
-      //   - full : 1600 (lectures longues, 5 plantes max possible)
-      // Le client trim/sanitize en aval, donc on garantit toujours
-      // que le JSON arrive entier — quitte à payer ~0.0002$ de plus.
-      max_tokens: fastMode ? 1100 : 1600,
+      //   - fast :    1100 (≈ 50% au-dessus du payload réel observé)
+      //   - full :    1600 (lectures longues v3 standard)
+      //   - deep :    2200 (jusqu'à 8 plantes + 3 sections riches extras
+      //                    avec textes courts — version Hobby-safe et
+      //                    plus fiable que le 3000 initial).
+      max_tokens: deepMode ? 2200 : (fastMode ? 1100 : 1600),
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         {
           role: 'user',
           content: [
             { type: 'text', text: userText },
+            // Vision detail unifié à 'low' — l'image client est déjà
+            // compressée à 1400px max, OpenAI extrait l'essentiel.
+            // 'high' coûtait ~+50% latence pour ~+5% précision sur
+            // notre cas d'usage (plantes basse-résolution).
             { type: 'image_url', image_url: { url: imageUrl, detail: 'low' } },
           ],
         },
@@ -272,6 +337,13 @@ module.exports = async (req, res) => {
 
     // Trim APRÈS parse (l'objet, jamais la string brute).
     const sanitized = sanitize(parsed);
+    if (deepMode) {
+      // Deep mode : aucun trim agressif. On ajoute en revanche les
+      // sections enrichies (garden_structure / ecosystem_reading /
+      // seasonal_observations) qui sortent du schéma v3 standard.
+      const enriched = enrichDeep(sanitized, parsed);
+      return res.status(200).json(enriched);
+    }
     return res.status(200).json(fastMode ? trimFastMode(sanitized) : sanitized);
   } catch (err) {
     console.error('diagnose handler error:', err);
@@ -446,6 +518,62 @@ const adaptV1 = (raw) => ({
   next_week_focus: [],
   gentle_note: str(raw.gentle_warning),
 });
+
+/* DEEP MODE enricher — applique le sanitize v3 standard puis attache
+   les trois sections extras (garden_structure, ecosystem_reading,
+   seasonal_observations) en validant chaque sous-champ.
+   `raw` est l'objet sorti de JSON.parse (avant sanitize) — on lit
+   les sections extras directement depuis lui pour rester défensif. */
+const enrichDeep = (sanitized, raw) => {
+  if (!sanitized || typeof sanitized !== 'object') return sanitized;
+  const gs = obj(raw && raw.garden_structure);
+  const er = obj(raw && raw.ecosystem_reading);
+  const so = obj(raw && raw.seasonal_observations);
+  // Caps serveur garantis même si le modèle a ignoré la consigne.
+  // Cohérent avec le prompt (8 / 8 / 3) et l'UX mobile-first.
+  const gr = sanitized.global_reading || {};
+  const trim3 = (a) => Array.isArray(a) ? a.slice(0, 3) : a;
+  return {
+    ...sanitized,
+    global_reading: {
+      ...gr,
+      main_strengths:   trim3(gr.main_strengths),
+      main_concerns:    trim3(gr.main_concerns),
+      priority_actions: trim3(gr.priority_actions),
+    },
+    detected_plants: Array.isArray(sanitized.detected_plants)
+      ? sanitized.detected_plants.slice(0, 8)
+      : [],
+    garden_map_suggestions: Array.isArray(sanitized.garden_map_suggestions)
+      ? sanitized.garden_map_suggestions.slice(0, 8)
+      : [],
+    garden_improvements: trim3(sanitized.garden_improvements),
+    next_week_focus:     trim3(sanitized.next_week_focus),
+    garden_structure: {
+      row_organization:    str(gs.row_organization),
+      companion_planting:  arr(gs.companion_planting).slice(0, 3),
+      density_patterns:    str(gs.density_patterns),
+      visual_balance:      str(gs.visual_balance),
+      biodiversity_score:  oneOf(gs.biodiversity_score, ['low','medium','high'], 'medium'),
+      vertical_layering:   str(gs.vertical_layering),
+      soil_exposure:       str(gs.soil_exposure),
+    },
+    ecosystem_reading: {
+      pollinator_friendliness: str(er.pollinator_friendliness),
+      diversity_observation:   str(er.diversity_observation),
+      monoculture_risk:        str(er.monoculture_risk),
+      overcrowding:            str(er.overcrowding),
+      moisture_balance:        str(er.moisture_balance),
+      airflow:                 str(er.airflow),
+    },
+    seasonal_observations: {
+      maturity_distribution: str(so.maturity_distribution),
+      succession_planting:   str(so.succession_planting),
+      seasonal_balance:      str(so.seasonal_balance),
+    },
+    _mode: 'deep', // marker discret pour le client
+  };
+};
 
 /* FAST MODE post-trim — applique des limites strictes au payload
    pour garantir une réponse compacte même si le modèle a ignoré la
