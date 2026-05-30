@@ -175,16 +175,35 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Imagen inválida.' });
     }
 
+    /* FAST MODE — défaut depuis 2026-05-30.
+       Le client envoie body.fast = true (cf. brote_app.js). Le serveur :
+       - injecte une consigne de concision dans le prompt
+       - cape les tokens de sortie pour borner la latence (gpt-4o-mini)
+       - le sanitize() en aval tronque déjà à 2 plantes / 2 actions.
+       Si body.fast === false (rare, ex: outil interne), on garde la
+       lecture longue. La forme du JSON reste identique — seul le volume
+       change, donc le client n'a rien à adapter. */
+    const fastMode = body && body.fast !== false; // default true
+    const userText = fastMode
+      ? 'Observa este huerto con calma y entrega la lectura en el JSON pedido. '
+        + 'MODO RÁPIDO: máximo 2 plantas en detected_plants, máximo 2 elementos por lista (main_strengths, main_concerns, priority_actions, garden_improvements, next_week_focus, recommended_actions). '
+        + 'Frases cortas. No identifiques sin necesidad — describe lo que ves.'
+      : 'Observa este huerto con calma y entrega la lectura en el JSON pedido. No identifiques sin necesidad — describe lo que ves.';
+
     const payload = {
       model: MODEL,
       response_format: { type: 'json_object' },
       temperature: 0.2,
+      // Borne la latence : gpt-4o-mini répond plus vite quand on cape.
+      // 700 tokens couvrent largement le JSON fast mode (≈400-500 réels).
+      // En mode lecture longue, on relâche à 1400.
+      max_tokens: fastMode ? 700 : 1400,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         {
           role: 'user',
           content: [
-            { type: 'text', text: 'Observa este huerto con calma y entrega la lectura en el JSON pedido. No identifiques sin necesidad — describe lo que ves.' },
+            { type: 'text', text: userText },
             { type: 'image_url', image_url: { url: imageUrl, detail: 'low' } },
           ],
         },
@@ -220,7 +239,8 @@ module.exports = async (req, res) => {
       return res.status(502).json({ error: 'El modelo no devolvió JSON válido.' });
     }
 
-    return res.status(200).json(sanitize(parsed));
+    const sanitized = sanitize(parsed);
+    return res.status(200).json(fastMode ? trimFastMode(sanitized) : sanitized);
   } catch (err) {
     console.error('diagnose handler error:', err);
     return res.status(500).json({ error: 'Error inesperado en el servidor.' });
@@ -383,6 +403,42 @@ const adaptV1 = (raw) => ({
   next_week_focus: [],
   gentle_note: str(raw.gentle_warning),
 });
+
+/* FAST MODE post-trim — applique des limites strictes au payload
+   pour garantir une réponse compacte même si le modèle a ignoré la
+   consigne. La forme reste identique : seules les longueurs changent. */
+const trimFastMode = (data) => {
+  if (!data || typeof data !== 'object') return data;
+  const MAX_PLANTS = 2;
+  const MAX_LIST = 2;
+  const trimArr = (a) => Array.isArray(a) ? a.slice(0, MAX_LIST) : a;
+  const gr = data.global_reading || {};
+  return {
+    ...data,
+    global_reading: {
+      ...gr,
+      main_strengths: trimArr(gr.main_strengths),
+      main_concerns: trimArr(gr.main_concerns),
+      priority_actions: trimArr(gr.priority_actions),
+    },
+    detected_plants: Array.isArray(data.detected_plants)
+      ? data.detected_plants.slice(0, MAX_PLANTS).map(p => ({
+          ...p,
+          health: p.health ? {
+            ...p.health,
+            possible_problems: trimArr(p.health.possible_problems),
+          } : p.health,
+          disease_risks: trimArr(p.disease_risks),
+          recommended_actions: trimArr(p.recommended_actions),
+          what_to_monitor: trimArr(p.what_to_monitor),
+        }))
+      : data.detected_plants,
+    garden_improvements: trimArr(data.garden_improvements),
+    next_week_focus: trimArr(data.next_week_focus),
+    // garden_map_suggestions: NON tronqué — c'est l'input de la reconstruction,
+    // le maillon visuel premium. Le serveur le cape déjà à 16/30 dans le prompt.
+  };
+};
 
 const sanitize = (raw) => {
   if (!raw || typeof raw !== 'object') return adaptV1({}); // empty but valid envelope

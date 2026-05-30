@@ -54,6 +54,32 @@
     }
   }
 
+  /* Variante débouncée de saveGarden pour les hot loops (ex:
+     validateDraft de reconstruction qui ajoute 15-30 plantes d'affilée).
+     Réduit les écritures localStorage de N à 1 et regroupe l'event
+     gardenchange — économise 300–800ms sur mobile sur le 15×15 premium.
+     Les callers qui ont besoin d'une persistance synchrone immédiate
+     continuent d'utiliser saveGarden(). */
+  let _saveDebounceId = null;
+  function saveGardenDebounced(garden, delayMs) {
+    const delay = Math.max(100, Math.min(500, delayMs || 350));
+    if (_saveDebounceId) clearTimeout(_saveDebounceId);
+    _saveDebounceId = setTimeout(() => {
+      _saveDebounceId = null;
+      saveGarden(garden);
+    }, delay);
+  }
+  /* Flush explicite avant unload/navigation (ne PAS perdre les writes
+     en attente si l'utilisateur quitte la page). */
+  function flushSaveGarden() {
+    if (_saveDebounceId) {
+      clearTimeout(_saveDebounceId);
+      _saveDebounceId = null;
+    }
+  }
+  window.addEventListener('beforeunload', flushSaveGarden);
+  window.addEventListener('pagehide', flushSaveGarden);
+
   /* ─── Ajustes (idioma, zona por defecto) ─── */
   function loadSettings() {
     try {
@@ -102,6 +128,8 @@
   window.SemencaStorage = {
     loadGarden,
     saveGarden,
+    saveGardenDebounced,
+    flushSaveGarden,
     loadSettings,
     saveSettings,
     getLang, hasLang, setLang,

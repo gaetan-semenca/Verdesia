@@ -111,7 +111,13 @@
     clearStatus();
     hideResult();
     try {
-      const compressed = await compressImage(file, 1280, 0.82);
+      // Compression jardin : 1400px / qualité 0.72 — équilibre net entre
+      // perception (l'IA voit assez), latence upload (mobile 3G/4G) et
+      // coût tokens image OpenAI. Le canvas re-encode dépouille EXIF
+      // automatiquement (zero metadata leak).
+      console.time('verdesia:compress');
+      const compressed = await compressGardenImage(file);
+      console.timeEnd('verdesia:compress');
       currentImageDataUrl = compressed;
       renderPreview(compressed);
       els.analyzeBtn.disabled = false;
@@ -125,7 +131,8 @@
   els.uploadInput.addEventListener('change', (e) => onFileChosen(e.target.files[0]));
 
   /* ───── Compression
-     Resize so longest edge ≤ maxEdge, encode JPEG at quality. */
+     Resize so longest edge ≤ maxEdge, encode JPEG at quality.
+     Re-encoding via canvas implicitly strips EXIF metadata. */
 
   const compressImage = (file, maxEdge, quality) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -149,6 +156,12 @@
     };
     reader.readAsDataURL(file);
   });
+
+  /* Helper public : compression dédiée pour les lectures de jardin.
+     1400px / 0.72 — voir commentaires onFileChosen. Exposé sur window
+     pour pouvoir être réutilisé ailleurs (e.g. observaciones). */
+  const compressGardenImage = (file) => compressImage(file, 1400, 0.72);
+  window.compressGardenImage = compressGardenImage;
 
   /* ───── Preview ───── */
 
@@ -180,6 +193,157 @@
     els.status.textContent = '';
   };
 
+  /* ═════ Contemplative overlay ═════════════════════════════════
+     Pendant l'attente (compression + upload + OpenAI), on remplace
+     la sensation de freeze par une séquence lente de 4 lignes
+     contemplatives. Le ton reste botánico — pas de spinner ni
+     de loader SaaS. Le overlay est injecté à la demande et retiré
+     proprement à la fin (success, error, timeout, abort). */
+
+  let _veilTimer = null;
+  let _veilStep = 0;
+  const VEIL_LINES_ANALYZE = [
+    'Verdésia observa lentamente tu huerto…',
+    'Buscando formas, luz y densidad…',
+    'Reconociendo plantas visibles…',
+    'Preparando una lectura tranquila…',
+  ];
+  const VEIL_LINES_RECONSTRUCT = [
+    'Leyendo la distribución general…',
+    'Ubicando plantas visibles…',
+    'Preparando una vista editable…',
+    'Casi listo…',
+  ];
+
+  function _ensureVeilStyles() {
+    if (document.getElementById('verdesia-veil-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'verdesia-veil-styles';
+    s.textContent = `
+      .v-veil {
+        position: fixed; inset: 0; z-index: 1500;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(253, 250, 242, .92);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        opacity: 0; transition: opacity .4s ease;
+      }
+      .v-veil.is-on { opacity: 1; }
+      .v-veil-inner {
+        max-width: 360px; padding: 0 28px; text-align: center;
+        font-family: 'Playfair Display', Georgia, serif;
+        font-style: italic; font-size: 18px; line-height: 1.55;
+        color: #3B5838;
+      }
+      .v-veil-title {
+        font-size: 15px; color: #4A3626; margin-bottom: 14px;
+        font-style: normal; font-family: 'Inter', system-ui, sans-serif;
+      }
+      .v-veil-title:empty { display: none; }
+      .v-veil-line {
+        display: block; min-height: 1.55em;
+        opacity: 0; transform: translateY(6px);
+        transition: opacity .5s ease, transform .5s ease;
+      }
+      .v-veil-line.is-shown { opacity: 1; transform: none; }
+      .v-veil-sub {
+        font-size: 13px; color: #7A6248; margin-top: 12px;
+        font-style: normal; font-family: 'Inter', system-ui, sans-serif;
+        line-height: 1.5; opacity: .85;
+      }
+      .v-veil-sub:empty { display: none; }
+      .v-veil-dot {
+        display: inline-block; width: 5px; height: 5px;
+        margin: 14px 4px 0; border-radius: 50%;
+        background: #78A07C; opacity: .3;
+        animation: vVeilDot 1.4s ease-in-out infinite;
+      }
+      .v-veil-dot:nth-child(2) { animation-delay: .2s; }
+      .v-veil-dot:nth-child(3) { animation-delay: .4s; }
+      @keyframes vVeilDot { 0%,100% { opacity:.3; transform: translateY(0); } 50% { opacity:.9; transform: translateY(-3px); } }
+      @media (prefers-reduced-motion: reduce) {
+        .v-veil { transition: none; }
+        .v-veil-line { transition: none; }
+        .v-veil-dot { animation: none; opacity: .6; }
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
+  /* _showVeil(opts?)
+     opts.lines      — séquence de lignes (default = analyse photo)
+     opts.intervalMs — délai entre lignes (default 1500)
+     opts.title      — petite ligne au-dessus de la séquence (optionnelle)
+     opts.subtitle   — petite ligne sous la séquence (optionnelle, rassurante)
+     Backward-compat : _showVeil() sans args utilise la séquence d'analyse. */
+  function _showVeil(opts) {
+    opts = opts || {};
+    const lines = (Array.isArray(opts.lines) && opts.lines.length) ? opts.lines : VEIL_LINES_ANALYZE;
+    const intervalMs = Math.max(300, Number(opts.intervalMs) || 1500);
+    const title = opts.title || '';
+    const subtitle = opts.subtitle || '';
+
+    _ensureVeilStyles();
+    let veil = document.getElementById('v-veil');
+    if (!veil) {
+      veil = document.createElement('div');
+      veil.id = 'v-veil';
+      veil.className = 'v-veil';
+      veil.setAttribute('role', 'status');
+      veil.setAttribute('aria-live', 'polite');
+      veil.innerHTML = `
+        <div class="v-veil-inner">
+          <div class="v-veil-title" id="v-veil-title"></div>
+          <span class="v-veil-line" id="v-veil-line"></span>
+          <div>
+            <span class="v-veil-dot"></span>
+            <span class="v-veil-dot"></span>
+            <span class="v-veil-dot"></span>
+          </div>
+          <div class="v-veil-sub" id="v-veil-sub"></div>
+        </div>
+      `;
+      document.body.appendChild(veil);
+    }
+    document.getElementById('v-veil-title').textContent = title;
+    document.getElementById('v-veil-sub').textContent = subtitle;
+
+    void veil.offsetWidth; // force reflow before fade in
+    veil.classList.add('is-on');
+
+    // Reset interval si appel successif
+    if (_veilTimer) { clearInterval(_veilTimer); _veilTimer = null; }
+
+    _veilStep = 0;
+    _setVeilLine(lines[0]);
+    _veilTimer = setInterval(() => {
+      _veilStep++;
+      if (_veilStep >= lines.length) {
+        clearInterval(_veilTimer); _veilTimer = null;
+        return;
+      }
+      _setVeilLine(lines[_veilStep]);
+    }, intervalMs);
+  }
+
+  function _setVeilLine(txt) {
+    const el = document.getElementById('v-veil-line');
+    if (!el) return;
+    el.classList.remove('is-shown');
+    setTimeout(() => {
+      el.textContent = txt;
+      requestAnimationFrame(() => el.classList.add('is-shown'));
+    }, 220);
+  }
+
+  function _hideVeil() {
+    if (_veilTimer) { clearInterval(_veilTimer); _veilTimer = null; }
+    const veil = document.getElementById('v-veil');
+    if (!veil) return;
+    veil.classList.remove('is-on');
+    setTimeout(() => { if (veil && veil.parentNode) veil.parentNode.removeChild(veil); }, 420);
+  }
+
   /* ───── Analyze ───── */
 
   els.analyzeBtn.addEventListener('click', async () => {
@@ -197,31 +361,57 @@
     }
 
     hideResult();
-    showLoading('Observando tu huerto con calma…');
+    clearStatus();          // veil prend la place
+    _showVeil();             // overlay contemplatif immédiat
     els.analyzeBtn.disabled = true;
 
     // Reset test panel pour la nouvelle analyse
     if (_testMode) {
       _updateTestPanel({ latency:'pidiendo…', detected:'—', map:'—', nomatch:'—', nospace:'—' });
     }
+    console.time('verdesia:diagnose-total');
     const _t0 = performance.now();
+
+    // Timeout sécurité : 20s côté frontend. AbortController coupe le fetch
+    // proprement (pas de freeze infini si Vercel ou OpenAI traîne).
+    const controller = new AbortController();
+    const TIMEOUT_MS = 20000;
+    let _timedOut = false;
+    const timeoutId = setTimeout(() => {
+      _timedOut = true;
+      controller.abort();
+    }, TIMEOUT_MS);
 
     try {
       const endpoint = (typeof window.BROTE_API_URL === 'string' && window.BROTE_API_URL) || '/api/diagnose';
+      console.time('verdesia:diagnose-network');
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: currentImageDataUrl }),
+        body: JSON.stringify({ image: currentImageDataUrl, fast: true }),
+        signal: controller.signal,
       });
+      console.timeEnd('verdesia:diagnose-network');
 
       if (!res.ok) {
         const text = await res.text().catch(() => '');
         throw new Error(text || `HTTP ${res.status}`);
       }
 
+      console.time('verdesia:diagnose-parse');
       const data = await res.json();
+      console.timeEnd('verdesia:diagnose-parse');
+
+      clearTimeout(timeoutId);
       const _latency = Math.round(performance.now() - _t0);
+
+      console.time('verdesia:diagnose-render');
+      _hideVeil();
       renderResult(data);
+      console.timeEnd('verdesia:diagnose-render');
+      console.timeEnd('verdesia:diagnose-total');
+      console.log('[verdesia] diagnose end · total', _latency, 'ms');
+
       clearStatus();
       // Comptabilise la lecture après succès uniquement (jamais sur erreur).
       if (window.VerdesiaPlan && typeof window.VerdesiaPlan.recordReading === 'function') {
@@ -234,10 +424,18 @@
         _updateTestPanel({ latency: _latency + 'ms', detected, map, nomatch:'—', nospace:'—' });
       }
     } catch (err) {
-      console.error(err);
+      clearTimeout(timeoutId);
+      _hideVeil();
+      console.timeEnd('verdesia:diagnose-total');
       const _latency = Math.round(performance.now() - _t0);
-      if (_testMode) _updateTestPanel({ latency: _latency + 'ms (error)' });
-      showError('No fue posible completar el análisis. Intenta de nuevo en un momento.');
+      console.warn('[verdesia] diagnose failed · total', _latency, 'ms ·', _timedOut ? 'timeout' : err && err.name || err);
+      if (_testMode) _updateTestPanel({ latency: _latency + 'ms (' + (_timedOut ? 'timeout' : 'error') + ')' });
+
+      if (_timedOut) {
+        showError('La lectura tomó demasiado tiempo. Intenta nuevamente con una foto más simple o más cercana.');
+      } else {
+        showError('No fue posible completar el análisis. Intenta de nuevo en un momento.');
+      }
     } finally {
       els.analyzeBtn.disabled = false;
     }
@@ -686,28 +884,77 @@
     btn.textContent = 'Preparar mapa del jardín';
     card.appendChild(btn);
 
-    btn.addEventListener('click', () => {
+    /* Flow async « préparation du mapa » — anti-freeze.
+       Avant : le click déclenchait generate() + setDraft() sync, puis
+       un setTimeout 120ms avant location.assign — soit ~120-600ms de
+       freeze opaque entre le click et la nouvelle page.
+       Maintenant :
+        1. Feedback bouton instantané (disabled + aria-busy + texte)
+        2. Overlay calme avec séquence de 4 lignes (0/700/1400/2100ms)
+        3. Yield à rAF + 50ms → garantit que la peinture du bouton et
+           de l'overlay arrive AVANT que le main thread soit pris par
+           generate() (qui peut prendre 50-300ms sur mobile).
+        4. Run generate() + setDraft() en parallèle d'un délai minimum
+           de 2400ms (le user voit toute la séquence).
+        5. Navigation seulement après — pas avant.
+       Si la génération échoue : l'overlay disparaît, le bouton revient. */
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
       btn.disabled = true;
-      btn.textContent = 'Preparando…';
-      try {
-        const draft = window.VerdesiaReconstruction.generate(data, {
-          sourceObservationId: _lastSavedObservationId,
-        });
-        // Test panel : remplir les compteurs dropped depuis le draft.
-        if (_testMode) {
-          const nomatch = (draft && Number.isInteger(draft.droppedNoMatch))
-            ? draft.droppedNoMatch : (draft && draft.droppedCount) || 0;
-          const nospace = (draft && Number.isInteger(draft.droppedNoSpace))
-            ? draft.droppedNoSpace : 0;
-          _updateTestPanel({ nomatch, nospace });
+      btn.setAttribute('aria-busy', 'true');
+      btn.textContent = 'Preparando mapa…';
+
+      _showVeil({
+        title: 'Verdésia está preparando un mapa preliminar de tu jardín…',
+        subtitle: 'Podrás revisarlo y corregirlo antes de actualizar tu jardín.',
+        lines: VEIL_LINES_RECONSTRUCT,
+        intervalMs: 700,
+      });
+
+      // Yield → garantir que le DOM (bouton disabled + overlay) est peint
+      // avant de lancer le travail lourd (generate peut bloquer 50-300ms).
+      await new Promise(requestAnimationFrame);
+      await new Promise(r => setTimeout(r, 50));
+
+      const MIN_VEIL_MS = 2400; // au moins jusqu'à la 4e ligne
+      const minDelay = new Promise(r => setTimeout(r, MIN_VEIL_MS));
+
+      const work = (async () => {
+        try {
+          console.time('verdesia:reconstruction-prepare');
+          const draft = window.VerdesiaReconstruction.generate(data, {
+            sourceObservationId: _lastSavedObservationId,
+          });
+          if (_testMode) {
+            const nomatch = (draft && Number.isInteger(draft.droppedNoMatch))
+              ? draft.droppedNoMatch : (draft && draft.droppedCount) || 0;
+            const nospace = (draft && Number.isInteger(draft.droppedNoSpace))
+              ? draft.droppedNoSpace : 0;
+            _updateTestPanel({ nomatch, nospace });
+          }
+          window.VerdesiaReconstruction.setDraft(draft);
+          console.timeEnd('verdesia:reconstruction-prepare');
+          return { ok: true };
+        } catch (e) {
+          console.warn('[reconstruction] generation failed:', e);
+          return { ok: false, error: e };
         }
-        window.VerdesiaReconstruction.setDraft(draft);
-        setTimeout(() => { location.assign('verdesia_reconstruccion.html'); }, 120);
-      } catch (e) {
-        console.warn('[reconstruction] generation failed:', e);
+      })();
+
+      const [workResult] = await Promise.all([work, minDelay]);
+
+      if (!workResult.ok) {
+        _hideVeil();
         btn.disabled = false;
+        btn.removeAttribute('aria-busy');
         btn.textContent = 'Preparar mapa del jardín';
+        showError('No fue posible preparar el mapa. Intenta de nuevo en un momento.');
+        return;
       }
+
+      // Petit délai pour laisser « Casi listo » respirer avant la nav.
+      await new Promise(r => setTimeout(r, 200));
+      location.assign('verdesia_reconstruccion.html');
     });
 
     return card;

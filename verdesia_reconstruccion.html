@@ -177,6 +177,18 @@ body::after {
   overflow: hidden;
   transition: border-color .18s, background .18s, transform .12s;
 }
+/* Pendant la construction progressive (grilles ≥ 100 cellules),
+   on désactive les transitions et les hover transforms pour éviter
+   les reflows en cascade et alléger le main thread. */
+.preview-grid.is-rendering .cell,
+.preview-grid.is-rendering .cell::before,
+.preview-grid.is-rendering .cell::after {
+  transition: none !important;
+  animation: none !important;
+}
+.preview-grid.is-rendering .cell.occupied:hover {
+  transform: none;
+}
 .cell.empty { /* nada — la dashed border ya señala "vacío" */ }
 .cell.occupied {
   background: var(--white);
@@ -411,6 +423,60 @@ body::after {
   }
 }
 
+/* ═══════════════════════════════════════ SKELETON DE PRÉPARATION ═══════════════════════════════════════
+   Affiché immédiatement à l'arrivée sur la page, le temps que le draft
+   soit lu depuis sessionStorage et que la grille soit construite. Le
+   skeleton est calme, botánico — pas un spinner SaaS. */
+.prep-skeleton {
+  max-width: 460px; margin: 60px auto 40px;
+  padding: 40px 28px; text-align: center;
+  opacity: 0; animation: prepFadeIn .4s ease forwards;
+}
+.prep-skeleton-em {
+  font-size: 38px; line-height: 1; margin-bottom: 18px;
+  filter: grayscale(.15);
+}
+.prep-skeleton-title {
+  font-family: var(--font-d); font-style: italic;
+  font-size: 21px; color: var(--moss); margin-bottom: 12px;
+  line-height: 1.4;
+}
+.prep-skeleton-sub {
+  font-family: var(--font-b); font-size: 14px;
+  color: var(--bark-lt); line-height: 1.6;
+  max-width: 360px; margin: 0 auto;
+}
+.prep-skeleton-dots {
+  display: flex; justify-content: center; gap: 6px;
+  margin-top: 22px;
+}
+.prep-skeleton-dots span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--sage); opacity: .3;
+  animation: prepDot 1.4s ease-in-out infinite;
+}
+.prep-skeleton-dots span:nth-child(2) { animation-delay: .2s; }
+.prep-skeleton-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes prepFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes prepDot { 0%,100% { opacity: .3; transform: translateY(0); } 50% { opacity: .9; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) {
+  .prep-skeleton { animation: none; opacity: 1; }
+  .prep-skeleton-dots span { animation: none; opacity: .6; }
+}
+
+/* Reassurance text sous le bouton Actualizar */
+.btn-reassurance {
+  margin: 14px 0 6px;
+  font-family: var(--font-b); font-size: 13px;
+  color: var(--bark-lt); line-height: 1.55;
+  text-align: center; max-width: 360px;
+}
+
+/* État busy du bouton Actualizar (pendant le batch write) */
+.btn-validate[aria-busy="true"] {
+  opacity: .7; cursor: progress;
+}
+
 /* ═══════════════════════════════════════ TOAST ═══════════════════════════════════════ */
 .toast {
   position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
@@ -456,8 +522,18 @@ body::after {
 <div class="draft-meta" id="draftMeta" hidden></div>
 <p class="draft-overflow-note" id="draftOverflowNote" hidden></p>
 
+<!-- ═══════════════════ SKELETON (visible inmediato hasta primer render) -->
+<section class="prep-skeleton" id="prepSkeleton" aria-live="polite">
+  <div class="prep-skeleton-em">🌱</div>
+  <div class="prep-skeleton-title">Preparando la vista editable…</div>
+  <p class="prep-skeleton-sub">Puedes revisar y corregir este mapa antes de actualizar tu jardín.</p>
+  <div class="prep-skeleton-dots">
+    <span></span><span></span><span></span>
+  </div>
+</section>
+
 <!-- ═══════════════════ PREVIEW GRID -->
-<main class="preview-wrap" id="previewWrap">
+<main class="preview-wrap" id="previewWrap" hidden>
   <div class="preview-grid" id="previewGrid"></div>
 </main>
 
@@ -472,6 +548,7 @@ body::after {
 <!-- ═══════════════════ ACTIONS -->
 <section class="actions" id="actionsBar" hidden>
   <button type="button" class="btn-validate" id="btnValidate">Actualizar mi jardín</button>
+  <p class="btn-reassurance" id="btnReassurance">Nada se aplicará hasta que confirmes. Puedes revisar y corregir este mapa antes.</p>
   <button type="button" class="btn-discard"  id="btnDiscard">Descartar reconstrucción</button>
 </section>
 
@@ -645,7 +722,25 @@ body::after {
   }
 
   /* ─── Render ───────────────────────────────────────────────── */
+  /* Render progressif :
+     - Construction des cellules dans un DocumentFragment hors DOM
+       (zéro reflow/repaint pendant la boucle).
+     - Pour les grilles ≥ 100 cellules (15×15 premium), on découpe la
+       construction en chunks de 25 cellules par requestAnimationFrame
+       pour ne pas bloquer le main thread + offrir une montée visuelle
+       progressive (sensation organique).
+     - Classe `.is-rendering` sur la grille pendant le build → désactive
+       les transitions CSS (cf. .preview-grid.is-rendering .cell).
+     - Délégation des clics et du drop sur la grille au lieu de listeners
+       par cellule, ce qui réduit le coût d'attache.
+  */
+
+  let _renderToken = 0; // annule un render en cours si un nouveau démarre
+
   function render() {
+    _renderToken++;
+    const myToken = _renderToken;
+    const tRender0 = performance.now();
     const draft = window.VerdesiaReconstruction.loadDraft();
 
     // Sin draft / sin sugerencias → estado vacío editorial.
@@ -666,10 +761,10 @@ body::after {
     const cols = draft.visibleCols || 4;
     const rows = draft.visibleRows || 4;
     const isCompact = cols <= 6;
+    const totalCells = cols * rows;
 
     $grid.className = 'preview-grid ' + (isCompact ? 'preview-grid--compact' : 'preview-grid--full');
-    // Mode déplacement actif → classe globale pour styler les cellules
-    // destinations potentielles + la source.
+    $grid.classList.add('is-rendering');
     if (_moveMode) $grid.classList.add('move-active');
     document.documentElement.style.setProperty('--draft-cols', String(cols));
 
@@ -679,79 +774,142 @@ body::after {
       byPos.set(`${s.suggestedX},${s.suggestedY}`, s);
     }
 
+    // Reset grid + meta immédiat (l'utilisateur voit que l'action a pris).
     $grid.innerHTML = '';
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        const cell = document.createElement('div');
-        cell.dataset.x = String(x);
-        cell.dataset.y = String(y);
-        cell.className = 'cell';
+    renderMeta(draft);
 
-        const sug = byPos.get(`${x},${y}`);
-        if (sug) {
-          cell.classList.add('occupied');
-          cell.dataset.sugId = sug.id;
-          cell.draggable = true;
-          cell.addEventListener('dragstart', onDragStart);
-          cell.addEventListener('dragend', onDragEnd);
+    /* Construction d'une cellule unique — extraite pour la boucle. */
+    const buildCell = (x, y) => {
+      const cell = document.createElement('div');
+      cell.dataset.x = String(x);
+      cell.dataset.y = String(y);
+      cell.className = 'cell';
 
-          // Marque la cellule source en move mode
-          if (_moveMode && _moveMode.sugId === sug.id) {
-            cell.classList.add('move-source');
-          }
+      const sug = byPos.get(`${x},${y}`);
+      if (sug) {
+        cell.classList.add('occupied');
+        cell.dataset.sugId = sug.id;
+        cell.draggable = true;
+        cell.addEventListener('dragstart', onDragStart);
+        cell.addEventListener('dragend', onDragEnd);
 
-          const confDot = `<span class="conf-dot conf-${sug.confidence}" title="Confianza: ${sug.confidence}"></span>`;
-          const removeBtn = `<button class="cell-remove" aria-label="Quitar" title="Quitar" data-sug-id="${sug.id}">×</button>`;
-          const photo = sug.plantPhoto
-            ? `<img class="cell-photo" src="${sug.plantPhoto}" alt="" loading="lazy" decoding="async"
-                    onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'cell-em',textContent:'${sug.plantEmoji}'}))">`
-            : `<div class="cell-em">${sug.plantEmoji || '🌱'}</div>`;
-          const stageLabel = STAGE_LABEL[sug.growthStage] || sug.growthStage || '';
-
-          cell.innerHTML =
-            confDot + photo +
-            `<div class="cell-name">${sug.plantName}</div>` +
-            (stageLabel ? `<div class="cell-stage">${stageLabel}</div>` : '') +
-            removeBtn;
-        } else {
-          cell.classList.add('empty');
+        if (_moveMode && _moveMode.sugId === sug.id) {
+          cell.classList.add('move-source');
         }
 
-        // Click handler unifié — en move-mode exécute le move (occupée ou vide),
-        // sur tactile + sugestión → action sheet, sinon no-op.
-        cell.addEventListener('click', (ev) => {
-          if (_moveMode) {
-            ev.preventDefault();
-            handleMoveTargetTap(x, y);
-            return;
-          }
-          if (_isTouchOnly && sug) {
-            ev.preventDefault();
-            openActionSheet(sug);
-          }
-        });
+        const confDot = `<span class="conf-dot conf-${sug.confidence}" title="Confianza: ${sug.confidence}"></span>`;
+        const removeBtn = `<button class="cell-remove" aria-label="Quitar" title="Quitar" data-sug-id="${sug.id}">×</button>`;
+        const photo = sug.plantPhoto
+          ? `<img class="cell-photo" src="${sug.plantPhoto}" alt="" loading="lazy" decoding="async"
+                  onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'cell-em',textContent:'${sug.plantEmoji}'}))">`
+          : `<div class="cell-em">${sug.plantEmoji || '🌱'}</div>`;
+        const stageLabel = STAGE_LABEL[sug.growthStage] || sug.growthStage || '';
 
-        cell.addEventListener('dragover', onDragOver);
-        cell.addEventListener('dragleave', onDragLeave);
-        cell.addEventListener('drop', onDrop);
-        $grid.appendChild(cell);
+        cell.innerHTML =
+          confDot + photo +
+          `<div class="cell-name">${sug.plantName}</div>` +
+          (stageLabel ? `<div class="cell-stage">${stageLabel}</div>` : '') +
+          removeBtn;
+      } else {
+        cell.classList.add('empty');
       }
+      return cell;
+    };
+
+    /* Stratégie 1 : grille compacte (≤ 100 cellules) → render synchrone via fragment. */
+    if (totalCells <= 100) {
+      const frag = document.createDocumentFragment();
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          frag.appendChild(buildCell(x, y));
+        }
+      }
+      $grid.appendChild(frag);
+      _finishRender(tRender0, totalCells, 'sync');
+      return;
     }
 
-    // Wire remove buttons después del innerHTML.
-    $grid.querySelectorAll('.cell-remove').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = btn.dataset.sugId;
+    /* Stratégie 2 : grille large (> 100) → chunks de 25 cells / rAF. */
+    const CHUNK = 25;
+    const coords = [];
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) coords.push([x, y]);
+    }
+    let i = 0;
+
+    const step = () => {
+      // Si un nouveau render a démarré (ex: déplacement, suppression),
+      // abandon silencieux : myToken n'est plus le courant.
+      if (myToken !== _renderToken) return;
+
+      const frag = document.createDocumentFragment();
+      const end = Math.min(i + CHUNK, coords.length);
+      for (; i < end; i++) {
+        const [x, y] = coords[i];
+        frag.appendChild(buildCell(x, y));
+      }
+      $grid.appendChild(frag);
+
+      if (i < coords.length) {
+        requestAnimationFrame(step);
+      } else {
+        _finishRender(tRender0, totalCells, 'chunked');
+      }
+    };
+    requestAnimationFrame(step);
+  }
+
+  function _finishRender(tStart, totalCells, mode) {
+    // Wire remove buttons via délégation (un seul listener sur la grille).
+    // Déjà attaché — voir _wireGridDelegation() appelé une seule fois au boot.
+    $grid.classList.remove('is-rendering');
+    const tEnd = performance.now();
+    console.log('[verdesia:render]', mode, totalCells, 'cells in', Math.round(tEnd - tStart), 'ms');
+  }
+
+  /* Délégation : un seul listener sur la grille pour les boutons remove
+     + dragover/dragleave/drop + clic (move target / action sheet).
+     Attaché une seule fois — survit aux rebuilds successifs de cellules. */
+  let _delegationWired = false;
+  function _wireGridDelegation() {
+    if (_delegationWired) return;
+    _delegationWired = true;
+
+    $grid.addEventListener('click', (ev) => {
+      const removeBtn = ev.target.closest('.cell-remove');
+      if (removeBtn) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const id = removeBtn.dataset.sugId;
         window.VerdesiaReconstruction.removeSuggestion(id);
         showToast('Sugerencia retirada.');
-      });
+        return;
+      }
+      const cell = ev.target.closest('.cell');
+      if (!cell) return;
+      const x = Number(cell.dataset.x);
+      const y = Number(cell.dataset.y);
+      if (_moveMode) {
+        ev.preventDefault();
+        handleMoveTargetTap(x, y);
+        return;
+      }
+      if (_isTouchOnly) {
+        const sug = cell.dataset.sugId
+          ? (window.VerdesiaReconstruction.loadDraft() || {suggestions:[]}).suggestions.find(s => s.id === cell.dataset.sugId)
+          : null;
+        if (sug) {
+          ev.preventDefault();
+          openActionSheet(sug);
+        }
+      }
     });
 
-    // Meta + overflow note.
-    renderMeta(draft);
+    $grid.addEventListener('dragover',  (ev) => { const c = ev.target.closest('.cell'); if (c) onDragOver({ target: c, currentTarget: c, preventDefault: () => ev.preventDefault(), dataTransfer: ev.dataTransfer }); });
+    $grid.addEventListener('dragleave', (ev) => { const c = ev.target.closest('.cell'); if (c) onDragLeave({ target: c, currentTarget: c }); });
+    $grid.addEventListener('drop',      (ev) => { const c = ev.target.closest('.cell'); if (c) onDrop({ target: c, currentTarget: c, preventDefault: () => ev.preventDefault(), dataTransfer: ev.dataTransfer }); });
   }
+  _wireGridDelegation();
 
   function renderMeta(draft) {
     $meta.hidden = false;
@@ -782,9 +940,24 @@ body::after {
   }
 
   /* ─── Actions ──────────────────────────────────────────────── */
-  document.getElementById('btnValidate').addEventListener('click', () => {
+  document.getElementById('btnValidate').addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget;
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    const originalText = btn.textContent;
+    btn.textContent = 'Actualizando…';
+
+    // Yield → laisser le bouton se repeindre AVANT le batch write (qui peut
+    // bloquer brièvement le main thread sur mobile pour 15-30 plantes).
+    await new Promise(requestAnimationFrame);
+    await new Promise(r => setTimeout(r, 50));
+
     const res = window.VerdesiaReconstruction.validateDraft();
     if (!res || !res.added) {
+      btn.disabled = false;
+      btn.removeAttribute('aria-busy');
+      btn.textContent = originalText;
       showToast('No se pudo actualizar el jardín.');
       return;
     }
@@ -803,8 +976,42 @@ body::after {
   /* ─── Reactividad ─── */
   window.addEventListener('verdesia:draftchange', render);
 
-  /* ─── Init ─── */
-  render();
+  /* ─── Init : skeleton → yield → render ─────────────────────────
+     Sans yield, le skeleton n'a pas le temps d'être peint avant que
+     render() ne mobilise le main thread (lecture sessionStorage +
+     parsing + grille de 16 à 225 cellules). Avec yield, l'utilisateur
+     voit immédiatement « Preparando la vista editable… » et la grille
+     monte ensuite progressivement (cf. chunked rAF dans render). */
+  const $previewWrap = document.getElementById('previewWrap');
+  const $prepSkel = document.getElementById('prepSkeleton');
+
+  async function _initRender() {
+    console.time('verdesia:reconstruction-page-load');
+    // Skeleton est déjà dans le DOM, déjà visible. On laisse le navigateur
+    // peindre une frame avant de lancer le render lourd.
+    await new Promise(requestAnimationFrame);
+    await new Promise(r => setTimeout(r, 50));
+
+    // Le wrap est encore hidden — render() va populer #previewGrid hors écran.
+    $previewWrap.hidden = false;
+    render();
+
+    // Petit fade-out du skeleton après que la grille soit construite
+    // (l'utilisateur perçoit la transition comme organique, pas comme
+    // un swap brutal). Pour les petits drafts (≤ 100 cellules), render
+    // est synchrone donc on peut cacher tout de suite. Pour les gros
+    // (rAF chunks), on laisse le skeleton un peu plus longtemps —
+    // la grille apparaît derrière progressivement.
+    requestAnimationFrame(() => {
+      $prepSkel.style.transition = 'opacity .35s ease';
+      $prepSkel.style.opacity = '0';
+      setTimeout(() => {
+        if ($prepSkel.parentNode) $prepSkel.parentNode.removeChild($prepSkel);
+      }, 380);
+    });
+    console.timeEnd('verdesia:reconstruction-page-load');
+  }
+  _initRender();
 })();
 </script>
 

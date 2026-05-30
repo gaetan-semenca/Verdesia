@@ -460,10 +460,12 @@
      dans la bonne étape. Sinon, fallback sur today. */
 
   function validateDraft() {
+    const tValidate0 = performance.now();
     const draft = loadDraft();
     if (!draft || !draft.suggestions || !draft.suggestions.length) return { added: 0 };
     const Garden = window.SemencaGarden;
-    if (!Garden) return { added: 0, error: 'Garden API missing' };
+    const Storage = window.SemencaStorage;
+    if (!Garden || !Storage) return { added: 0, error: 'Garden API missing' };
 
     const today = new Date();
     const y = today.getFullYear();
@@ -475,22 +477,40 @@
     // de almacenamiento, no sobre la visible. verdesia_jardin.html sólo
     // muestra la zona visible pero el almacenamiento es siempre 15×15.
     const STORAGE_COLS = 15;
+
+    /* Batch write — on construit le jardin entièrement en mémoire,
+       puis on persiste en UN SEUL saveGarden(). Avant : 2 × N writes
+       localStorage + 2 × N events gardenchange (chacun déclenche un
+       re-render complet de la grille 15×15 dans verdesia_jardin.html).
+       Pour N=16 c'est 32 re-renders cascadés — la cause principale
+       du freeze sévère. Maintenant : 1 write, 1 event, 1 render. */
+    const garden = Storage.loadGarden();
+    const zone = Storage.getZone() || 'Santiago';
     let added = 0;
     for (const sug of draft.suggestions) {
       try {
-        // Cherche la planta dans le catalogue pour récupérer ses stages
         const plant = (window.SEMENCA_PLANTS || []).find(p => p.id === sug.plantId);
-        // Estime la sowDate à partir de l'étape détectée — fallback today
         const sowDate = _estimateSowDateForStage(plant, sug.growthStage) || todaySowDate;
-        const entry = Garden.addPlant(sug.plantId, sowDate);
-        if (!entry) continue;
+        const instanceId = `${sug.plantId}__${Date.now().toString(36)}_${Math.floor(Math.random() * 1e6).toString(36)}__${added}`;
         const gridPos = sug.suggestedY * STORAGE_COLS + sug.suggestedX;
-        Garden.updatePlantEntry(entry.instanceId, { gridPos });
+        garden.push({
+          instanceId,
+          plantId: sug.plantId,
+          sowDate,
+          zone,
+          addedAt: new Date().toISOString(),
+          notes: [],
+          gridPos,
+        });
         added++;
       } catch (e) {
         console.warn('[reconstruction] add failed for', sug.plantId, e);
       }
     }
+    // UN SEUL write — déclenche UN SEUL gardenchange.
+    Storage.saveGarden(garden);
+    const tValidate1 = performance.now();
+    console.log('[verdesia:reconstruction] validateDraft', added, 'plants in', Math.round(tValidate1 - tValidate0), 'ms');
 
     // Vincular con observación de origen (campo aditivo, sin breaking).
     if (draft.sourceObservationId && window.VerdesiaObservations) {
