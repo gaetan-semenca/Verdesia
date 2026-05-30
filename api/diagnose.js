@@ -147,10 +147,20 @@ Reglas garden_map_suggestions — RECONSTRUCCIÓN APROXIMADA DEL HUERTO:
 FAST MODE (when the user message mentions MODO RÁPIDO):
 - Return compact but complete JSON.
 - Never write long prose. Short sentences only.
-- Every array must contain at most 2 items.
-- detected_plants: max 2.
-- garden_map_suggestions: max 2.
+- detected_plants: max 4 (PREFER REPRESENTATIVE BIODIVERSITY).
+- garden_map_suggestions: max 4 (same biodiversity rule).
+- Every OTHER array (main_strengths, main_concerns, priority_actions,
+  garden_improvements, next_week_focus, recommended_actions): max 2 items.
 - Each text field max 120 characters.
+
+BIODIVERSITY RULE FOR FAST MODE:
+- Prefer representative biodiversity over exhaustive detection.
+- Avoid returning multiple visually similar plants. If several plants
+  look similar, group them under ONE representative entry and use the
+  remaining slots for distinct families, forms, colors, garden roles.
+- BAD: lettuce, red lettuce, green lettuce, small lettuce.
+- GOOD: lettuce, cabbage, herb, flower.
+
 - Do not include extra commentary outside the JSON.
 - ALWAYS finish the JSON completely — close every brace and bracket.
 - If you must shorten content, drop optional fields (set to "" or [])
@@ -260,8 +270,11 @@ module.exports = async (req, res) => {
         + 'Tono calmo, botánico, prudente. Cierra siempre el JSON completamente.'
       : fastMode
         ? 'Observa este huerto con calma y entrega la lectura en el JSON pedido. '
-          + 'MODO RÁPIDO: máximo 2 plantas en detected_plants, máximo 2 garden_map_suggestions, '
-          + 'máximo 2 elementos por lista (main_strengths, main_concerns, priority_actions, '
+          + 'MODO RÁPIDO: máximo 4 plantas representativas en detected_plants, máximo 4 garden_map_suggestions. '
+          + 'PRIORIZA LA BIODIVERSIDAD: si ves varias plantas similares (ej: 4 lechugas), '
+          + 'AGRUPA bajo UNA entrada y usa las demás para variedad real (col, hierbas, flores, raíces). '
+          + 'Prefiere familias, formas y colores distintos en lugar de variantes de la misma planta. '
+          + 'Máximo 2 elementos en las demás listas (main_strengths, main_concerns, priority_actions, '
           + 'garden_improvements, next_week_focus, recommended_actions). '
           + 'Cada campo de texto máximo 120 caracteres. Frases cortas. '
           + 'Cierra siempre el JSON completamente — termina todas las llaves y corchetes. '
@@ -273,12 +286,12 @@ module.exports = async (req, res) => {
       response_format: { type: 'json_object' },
       temperature: 0.2,
       // max_tokens : compromis entre latence et complétude du JSON.
-      //   - fast :    1100 (≈ 50% au-dessus du payload réel observé)
+      //   - fast :    1300 (jusqu'à 4 plantes représentatives, marge +20%
+      //                    contre la troncature, latence quasi-identique)
       //   - full :    1600 (lectures longues v3 standard)
       //   - deep :    2200 (jusqu'à 8 plantes + 3 sections riches extras
-      //                    avec textes courts — version Hobby-safe et
-      //                    plus fiable que le 3000 initial).
-      max_tokens: deepMode ? 2200 : (fastMode ? 1100 : 1600),
+      //                    avec textes courts — version Hobby-safe).
+      max_tokens: deepMode ? 2200 : (fastMode ? 1300 : 1600),
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         {
@@ -577,10 +590,14 @@ const enrichDeep = (sanitized, raw) => {
 
 /* FAST MODE post-trim — applique des limites strictes au payload
    pour garantir une réponse compacte même si le modèle a ignoré la
-   consigne. La forme reste identique : seules les longueurs changent. */
+   consigne. La forme reste identique : seules les longueurs changent.
+
+   2026-05-30 update : detected_plants + garden_map_suggestions bumpés
+   à 4 (vs 2) pour donner une sensation de "Verdésia comprend le jardin".
+   Les autres listes restent à 2 items max pour ne pas grossir le payload. */
 const trimFastMode = (data) => {
   if (!data || typeof data !== 'object') return data;
-  const MAX_PLANTS = 2;
+  const MAX_PLANTS = 4;
   const MAX_LIST = 2;
   const trimArr = (a) => Array.isArray(a) ? a.slice(0, MAX_LIST) : a;
   const gr = data.global_reading || {};
@@ -606,8 +623,13 @@ const trimFastMode = (data) => {
       : data.detected_plants,
     garden_improvements: trimArr(data.garden_improvements),
     next_week_focus: trimArr(data.next_week_focus),
-    // garden_map_suggestions: NON tronqué — c'est l'input de la reconstruction,
-    // le maillon visuel premium. Le serveur le cape déjà à 16/30 dans le prompt.
+    // garden_map_suggestions : capé à MAX_PLANTS (=4) en fast mode pour
+    // rester aligné avec le nombre de plantas détectées. La reconstruction
+    // pose les plantes dans la grille → trop de suggestions ferait de la
+    // reconstruction "magique" un bruit. 4 distinctes valent mieux que 12 floues.
+    garden_map_suggestions: Array.isArray(data.garden_map_suggestions)
+      ? data.garden_map_suggestions.slice(0, MAX_PLANTS)
+      : data.garden_map_suggestions,
   };
 };
 
