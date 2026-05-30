@@ -884,20 +884,16 @@
     btn.textContent = 'Preparar mapa del jardín';
     card.appendChild(btn);
 
-    /* Flow async « préparation du mapa » — anti-freeze.
-       Avant : le click déclenchait generate() + setDraft() sync, puis
-       un setTimeout 120ms avant location.assign — soit ~120-600ms de
-       freeze opaque entre le click et la nouvelle page.
-       Maintenant :
-        1. Feedback bouton instantané (disabled + aria-busy + texte)
-        2. Overlay calme avec séquence de 4 lignes (0/700/1400/2100ms)
-        3. Yield à rAF + 50ms → garantit que la peinture du bouton et
-           de l'overlay arrive AVANT que le main thread soit pris par
-           generate() (qui peut prendre 50-300ms sur mobile).
-        4. Run generate() + setDraft() en parallèle d'un délai minimum
-           de 2400ms (le user voit toute la séquence).
-        5. Navigation seulement après — pas avant.
-       Si la génération échoue : l'overlay disparaît, le bouton revient. */
+    /* Flow async « préparation du mapa » — modal in-page (pas de nav).
+       Le user reste sur la page de lectura. Après la séquence overlay
+       de préparation, une modal élégante apparaît avec :
+        - Titre rassurant : « Verdésia preparó una propuesta para tu jardín »
+        - Jusqu'à 4 cartes plantes (nom · confiance · zone)
+        - CTA principal : « Agregar a mi jardín » → applyDraftToGarden + redirect jardin
+        - CTA secondaire : « Revisar manualmente » → ouvre verdesia_reconstruccion.html
+       Pour les cas où aucune planta n'est fiable, une variante fallback
+       affiche : « Verdésia no encontró suficientes plantas claras »
+       avec « Intentar otra foto » et « Agregar manualmente ». */
     btn.addEventListener('click', async () => {
       if (btn.disabled) return;
       btn.disabled = true;
@@ -905,24 +901,23 @@
       btn.textContent = 'Preparando mapa…';
 
       _showVeil({
-        title: 'Verdésia está preparando un mapa preliminar de tu jardín…',
-        subtitle: 'Podrás revisarlo y corregirlo antes de actualizar tu jardín.',
+        title: 'Verdésia está preparando una propuesta para tu jardín…',
+        subtitle: 'No necesita ser perfecta: podrás ajustarla más adelante.',
         lines: VEIL_LINES_RECONSTRUCT,
         intervalMs: 700,
       });
 
-      // Yield → garantir que le DOM (bouton disabled + overlay) est peint
-      // avant de lancer le travail lourd (generate peut bloquer 50-300ms).
       await new Promise(requestAnimationFrame);
       await new Promise(r => setTimeout(r, 50));
 
-      const MIN_VEIL_MS = 2400; // au moins jusqu'à la 4e ligne
+      const MIN_VEIL_MS = 2400;
       const minDelay = new Promise(r => setTimeout(r, MIN_VEIL_MS));
 
+      let draft = null;
       const work = (async () => {
         try {
           console.time('verdesia:reconstruction-prepare');
-          const draft = window.VerdesiaReconstruction.generate(data, {
+          draft = window.VerdesiaReconstruction.generate(data, {
             sourceObservationId: _lastSavedObservationId,
           });
           if (_testMode) {
@@ -932,6 +927,8 @@
               ? draft.droppedNoSpace : 0;
             _updateTestPanel({ nomatch, nospace });
           }
+          // setDraft persiste en sessionStorage — utile si l'utilisateur
+          // choisit ensuite « Revisar manualmente » (cette page lit le draft).
           window.VerdesiaReconstruction.setDraft(draft);
           console.timeEnd('verdesia:reconstruction-prepare');
           return { ok: true };
@@ -952,13 +949,339 @@
         return;
       }
 
-      // Petit délai pour laisser « Casi listo » respirer avant la nav.
+      // Petit délai pour laisser « Casi listo » respirer avant la modal.
       await new Promise(r => setTimeout(r, 200));
-      location.assign('verdesia_reconstruccion.html');
+      _hideVeil();
+
+      // Yield pour laisser le veil fade-out finir avant d'ouvrir la modal.
+      await new Promise(r => setTimeout(r, 220));
+
+      _openGardenProposalModal(draft, btn);
     });
 
     return card;
   };
+
+  /* ═════════════════════════════════════════════════════════════════
+     GARDEN PROPOSAL MODAL — flow principal de "Preparar mapa"
+     remplace la navigation vers verdesia_reconstruccion.html.
+     L'utilisateur voit jusqu'à 4 cartes plantes, peut ajouter en un
+     clic, ou choisir le mode manuel pour ouvrir la page éditable. */
+
+  function _ensureProposalStyles() {
+    if (document.getElementById('verdesia-proposal-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'verdesia-proposal-styles';
+    s.textContent = `
+      .gp-backdrop {
+        position: fixed; inset: 0; z-index: 1600;
+        background: rgba(42, 30, 18, .42);
+        display: flex; align-items: flex-end; justify-content: center;
+        opacity: 0; transition: opacity .32s ease;
+      }
+      .gp-backdrop.is-on { opacity: 1; }
+      @media (min-width: 640px) {
+        .gp-backdrop { align-items: center; }
+      }
+      .gp-modal {
+        background: #FDFAF2; color: #2A1E12;
+        max-width: 520px; width: 100%;
+        border-radius: 18px 18px 0 0;
+        padding: 28px 24px 22px;
+        box-shadow: 0 -10px 40px rgba(42,30,18,.18);
+        transform: translateY(20px); opacity: 0;
+        transition: transform .35s cubic-bezier(.16,1,.3,1), opacity .25s ease;
+        max-height: 92vh; overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      @media (min-width: 640px) {
+        .gp-modal { border-radius: 18px; transform: translateY(12px) scale(.98); }
+      }
+      .gp-backdrop.is-on .gp-modal { transform: none; opacity: 1; }
+      .gp-eyebrow {
+        font-family: 'DM Mono', monospace; font-size: 10px;
+        color: #78A07C; letter-spacing: 1.8px; text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .gp-title {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 22px; line-height: 1.3; color: #2A1E12;
+        margin-bottom: 8px;
+      }
+      .gp-title em { color: #3B5838; font-style: italic; }
+      .gp-sub {
+        font-size: 14.5px; color: #4A3626; line-height: 1.55;
+        margin-bottom: 22px;
+      }
+      .gp-section-title {
+        font-family: 'DM Mono', monospace; font-size: 10px;
+        color: #7A6248; letter-spacing: 1.5px; text-transform: uppercase;
+        margin: 14px 0 10px;
+      }
+      .gp-plants {
+        display: flex; flex-direction: column; gap: 10px;
+        margin-bottom: 20px;
+      }
+      .gp-plant {
+        display: flex; align-items: center; gap: 14px;
+        background: #F4EFE5; border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .gp-plant-em {
+        font-size: 28px; line-height: 1; flex-shrink: 0;
+      }
+      .gp-plant-photo {
+        width: 44px; height: 44px; border-radius: 10px; object-fit: cover;
+        flex-shrink: 0;
+      }
+      .gp-plant-body { flex: 1; min-width: 0; }
+      .gp-plant-name {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 16.5px; color: #2A1E12; line-height: 1.25;
+      }
+      .gp-plant-meta {
+        font-size: 12.5px; color: #7A6248; margin-top: 2px;
+        line-height: 1.4;
+      }
+      .gp-plant-meta .gp-dot {
+        display: inline-block; width: 4px; height: 4px;
+        border-radius: 50%; background: #78A07C;
+        margin: 0 7px; vertical-align: middle; opacity: .6;
+      }
+      .gp-overflow {
+        font-size: 13px; color: #7A6248; font-style: italic;
+        text-align: center; padding: 6px 0 4px;
+      }
+      .gp-actions {
+        display: flex; flex-direction: column; gap: 10px;
+        margin-top: 8px;
+      }
+      .gp-btn-primary {
+        background: #3B5838; color: #FDFAF2;
+        border: none; border-radius: 12px;
+        padding: 14px 22px; font-size: 15.5px;
+        font-family: 'Inter', system-ui, sans-serif; font-weight: 500;
+        cursor: pointer; transition: background .18s, opacity .18s;
+        min-height: 48px;
+      }
+      .gp-btn-primary:hover { background: #4D7050; }
+      .gp-btn-primary:disabled { opacity: .7; cursor: progress; }
+      .gp-btn-primary[aria-busy="true"] { opacity: .7; cursor: progress; }
+      .gp-btn-secondary {
+        background: transparent; color: #3B5838;
+        border: none; padding: 10px;
+        font-family: 'Inter', system-ui, sans-serif; font-size: 14px;
+        cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+        text-decoration-color: rgba(59,88,56,.35);
+        transition: text-decoration-color .18s;
+      }
+      .gp-btn-secondary:hover { text-decoration-color: rgba(59,88,56,.9); }
+      .gp-success {
+        text-align: center; padding: 14px 0;
+        font-family: 'Playfair Display', Georgia, serif;
+        font-style: italic; font-size: 17px; color: #3B5838;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .gp-backdrop, .gp-modal { transition: none; }
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
+  function _openGardenProposalModal(draft, triggerBtn) {
+    _ensureProposalStyles();
+
+    const suggestions = (draft && Array.isArray(draft.suggestions)) ? draft.suggestions : [];
+    const total = suggestions.length;
+    const SHOW_MAX = 4;
+    const shown = suggestions.slice(0, SHOW_MAX);
+    const overflow = Math.max(0, total - SHOW_MAX);
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'gp-backdrop';
+    const modal = document.createElement('div');
+    modal.className = 'gp-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'gp-title');
+
+    // Variante fallback : aucune planta fiable détectée.
+    if (total === 0) {
+      modal.innerHTML = `
+        <div class="gp-eyebrow">Mapa del huerto</div>
+        <h2 class="gp-title" id="gp-title">Verdésia no encontró suficientes plantas claras</h2>
+        <p class="gp-sub">Puedes intentar con una foto más cercana o agregar plantas manualmente.</p>
+        <div class="gp-actions">
+          <button type="button" class="gp-btn-primary" id="gp-retry">Intentar otra foto</button>
+          <button type="button" class="gp-btn-secondary" id="gp-manual">Agregar manualmente</button>
+        </div>
+      `;
+    } else {
+      const plantsHtml = shown.map(s => {
+        const conf = s.confidence === 'high' ? 'Lectura clara'
+                   : s.confidence === 'medium' ? 'Indicios visibles'
+                   : 'Indicios discretos';
+        const zone = _zoneToSpanish(s.sceneZone || 'center');
+        const stage = (s.growthStage || '').toLowerCase();
+        const stageLabel = stage ? ` <span class="gp-dot"></span> ${_escapeHtml(stage)}` : '';
+        const photo = s.plantPhoto
+          ? `<img class="gp-plant-photo" src="${_escapeAttr(s.plantPhoto)}" alt="" loading="lazy" decoding="async"
+                  onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'gp-plant-em',textContent:'${_escapeAttr(s.plantEmoji || '🌱')}'}))">`
+          : `<div class="gp-plant-em">${_escapeHtml(s.plantEmoji || '🌱')}</div>`;
+        return `
+          <div class="gp-plant">
+            ${photo}
+            <div class="gp-plant-body">
+              <div class="gp-plant-name">${_escapeHtml(s.plantName)}</div>
+              <div class="gp-plant-meta">${conf} <span class="gp-dot"></span> ${zone}${stageLabel}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const overflowHtml = overflow > 0
+        ? `<p class="gp-overflow">+ ${overflow} ${overflow === 1 ? 'planta más' : 'plantas más'}</p>`
+        : '';
+
+      modal.innerHTML = `
+        <div class="gp-eyebrow">Mapa del huerto</div>
+        <h2 class="gp-title" id="gp-title">Verdésia preparó una propuesta para tu <em>jardín</em></h2>
+        <p class="gp-sub">Encontró algunas plantas probables. No hace falta que sea perfecto para empezar.</p>
+        <div class="gp-section-title">Plantas propuestas</div>
+        <div class="gp-plants">${plantsHtml}</div>
+        ${overflowHtml}
+        <div class="gp-actions">
+          <button type="button" class="gp-btn-primary" id="gp-add">Agregar a mi jardín</button>
+          <button type="button" class="gp-btn-secondary" id="gp-manual">Revisar manualmente</button>
+        </div>
+      `;
+    }
+
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+
+    // Fade in
+    void backdrop.offsetWidth;
+    backdrop.classList.add('is-on');
+
+    // Focus management
+    const firstBtn = modal.querySelector('.gp-btn-primary');
+    if (firstBtn) setTimeout(() => firstBtn.focus(), 380);
+
+    function _closeModal(cb) {
+      backdrop.classList.remove('is-on');
+      setTimeout(() => {
+        if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+        if (cb) cb();
+      }, 280);
+    }
+
+    function _restoreTriggerBtn() {
+      if (triggerBtn) {
+        triggerBtn.disabled = false;
+        triggerBtn.removeAttribute('aria-busy');
+        triggerBtn.textContent = 'Preparar mapa del jardín';
+      }
+    }
+
+    // Escape pour fermer (variante non-bloquante)
+    function onKey(ev) {
+      if (ev.key === 'Escape') {
+        document.removeEventListener('keydown', onKey);
+        _closeModal(_restoreTriggerBtn);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+
+    // Fallback handlers
+    const retryBtn = modal.querySelector('#gp-retry');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        document.removeEventListener('keydown', onKey);
+        _closeModal(_restoreTriggerBtn);
+        // L'utilisateur reste sur la page — il peut reprendre une photo
+        // depuis le composer encore en haut de la page.
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+    const manualBtn = modal.querySelector('#gp-manual');
+    if (manualBtn) {
+      manualBtn.addEventListener('click', () => {
+        document.removeEventListener('keydown', onKey);
+        // On laisse le draft en sessionStorage — la page reconstruction le lit.
+        location.assign('verdesia_reconstruccion.html');
+      });
+    }
+
+    // CTA principal — appliquer le draft directement.
+    const addBtn = modal.querySelector('#gp-add');
+    if (addBtn) {
+      addBtn.addEventListener('click', async () => {
+        if (addBtn.disabled) return;
+        addBtn.disabled = true;
+        addBtn.setAttribute('aria-busy', 'true');
+        addBtn.textContent = 'Agregando…';
+
+        // Yield → laisser le bouton se repeindre avant le batch write.
+        await new Promise(requestAnimationFrame);
+        await new Promise(r => setTimeout(r, 50));
+
+        console.time('verdesia:apply-draft');
+        const result = (window.VerdesiaReconstruction && window.VerdesiaReconstruction.applyDraftToGarden)
+          ? window.VerdesiaReconstruction.applyDraftToGarden(draft)
+          : { added: 0, error: 'API missing' };
+        console.timeEnd('verdesia:apply-draft');
+
+        if (!result || !result.added) {
+          addBtn.disabled = false;
+          addBtn.removeAttribute('aria-busy');
+          addBtn.textContent = 'Agregar a mi jardín';
+          // Toast d'erreur léger (réutilise status si dispo)
+          showError('No fue posible actualizar el jardín. Intenta de nuevo.');
+          return;
+        }
+
+        // Confirmation douce in-modal, puis redirect.
+        const actions = modal.querySelector('.gp-actions');
+        if (actions) {
+          actions.innerHTML = `
+            <div class="gp-success" aria-live="polite">
+              Tu jardín fue actualizado con ${result.added}
+              ${result.added === 1 ? 'planta' : 'plantas'}.
+            </div>
+            <button type="button" class="gp-btn-primary" id="gp-go">Ver mi jardín</button>
+          `;
+          const goBtn = modal.querySelector('#gp-go');
+          if (goBtn) goBtn.addEventListener('click', () => {
+            location.assign('verdesia_jardin.html');
+          });
+        }
+        document.removeEventListener('keydown', onKey);
+        // Auto-redirect après 900ms si l'utilisateur ne clique pas.
+        setTimeout(() => { location.assign('verdesia_jardin.html'); }, 900);
+      });
+    }
+  }
+
+  /* helpers locaux pour la modal */
+  function _zoneToSpanish(zone) {
+    const map = {
+      left: 'izquierda', center: 'centro', right: 'derecha',
+      foreground: 'primer plano', background: 'al fondo',
+      top_left: 'arriba izquierda', top_center: 'arriba', top_right: 'arriba derecha',
+      middle_left: 'izquierda', middle_right: 'derecha',
+      bottom_left: 'abajo izquierda', bottom_center: 'abajo', bottom_right: 'abajo derecha',
+    };
+    return map[zone] || 'visible';
+  }
+  function _escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function _escapeAttr(s) {
+    return _escapeHtml(s);
+  }
 
   /* ─── Guardar esta observación ──────────────────────────────
      Tarjeta calma al final de la lectura. Convierte los datos de la

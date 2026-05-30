@@ -459,9 +459,23 @@
      on calcule une sowDate rétroactive pour que la planta apparaisse
      dans la bonne étape. Sinon, fallback sur today. */
 
-  function validateDraft() {
-    const tValidate0 = performance.now();
-    const draft = loadDraft();
+  /* _applyDraft(draft) — cœur du batch write.
+     Construit le jardin en mémoire et persiste en UN SEUL saveGarden.
+     - 1 write localStorage
+     - 1 event gardenchange (donc 1 re-render des pages abonnées)
+     - Pas de freeze, même pour 30 plantes
+     Utilisé par :
+     - validateDraft()           : lit le draft depuis sessionStorage,
+                                   appelle _applyDraft, puis discardDraft.
+                                   Conserve le comportement historique
+                                   de la page verdesia_reconstruccion.html.
+     - applyDraftToGarden(draft) : nouvelle API publique pour appliquer
+                                   un draft passé en argument (ou lu
+                                   depuis sessionStorage si absent),
+                                   utilisée par la modal in-page du
+                                   nouveau flow "Preparar mapa". */
+  function _applyDraft(draft) {
+    const tApply0 = performance.now();
     if (!draft || !draft.suggestions || !draft.suggestions.length) return { added: 0 };
     const Garden = window.SemencaGarden;
     const Storage = window.SemencaStorage;
@@ -478,12 +492,6 @@
     // muestra la zona visible pero el almacenamiento es siempre 15×15.
     const STORAGE_COLS = 15;
 
-    /* Batch write — on construit le jardin entièrement en mémoire,
-       puis on persiste en UN SEUL saveGarden(). Avant : 2 × N writes
-       localStorage + 2 × N events gardenchange (chacun déclenche un
-       re-render complet de la grille 15×15 dans verdesia_jardin.html).
-       Pour N=16 c'est 32 re-renders cascadés — la cause principale
-       du freeze sévère. Maintenant : 1 write, 1 event, 1 render. */
     const garden = Storage.loadGarden();
     const zone = Storage.getZone() || 'Santiago';
     let added = 0;
@@ -509,16 +517,14 @@
     }
     // UN SEUL write — déclenche UN SEUL gardenchange.
     Storage.saveGarden(garden);
-    const tValidate1 = performance.now();
-    console.log('[verdesia:reconstruction] validateDraft', added, 'plants in', Math.round(tValidate1 - tValidate0), 'ms');
+    const tApply1 = performance.now();
+    console.log('[verdesia:reconstruction] _applyDraft', added, 'plants in', Math.round(tApply1 - tApply0), 'ms');
 
     // Vincular con observación de origen (campo aditivo, sin breaking).
     if (draft.sourceObservationId && window.VerdesiaObservations) {
       try {
         const obs = window.VerdesiaObservations.get(draft.sourceObservationId);
         if (obs) {
-          // No hay API de update aún — escribimos directamente la clave;
-          // es aditivo, la observación sigue siendo válida.
           const list = JSON.parse(localStorage.getItem('verdesia_observations') || '[]');
           const idx = list.findIndex(o => o.id === draft.sourceObservationId);
           if (idx >= 0) {
@@ -529,8 +535,29 @@
       } catch {}
     }
 
-    discardDraft();
     return { added };
+  }
+
+  /* validateDraft() — utilisé par la page verdesia_reconstruccion.html.
+     Lit le draft depuis sessionStorage, l'applique, puis le supprime. */
+  function validateDraft() {
+    const draft = loadDraft();
+    const result = _applyDraft(draft);
+    if (result.added > 0) discardDraft();
+    return result;
+  }
+
+  /* applyDraftToGarden(draft?) — nouvelle API publique.
+     Si `draft` est fourni, l'utilise directement (cas modal in-page).
+     Sinon, lit depuis sessionStorage (équivalent à validateDraft).
+     Dans les deux cas, le draft session est purgé après succès pour
+     éviter qu'une nouvelle ouverture de verdesia_reconstruccion.html
+     réaffiche les mêmes suggestions. */
+  function applyDraftToGarden(draft) {
+    const effective = draft && draft.suggestions ? draft : loadDraft();
+    const result = _applyDraft(effective);
+    if (result.added > 0) discardDraft();
+    return result;
   }
 
   /* ─── Export ─── */
@@ -542,6 +569,7 @@
     removeSuggestion,
     moveSuggestion,
     validateDraft,
+    applyDraftToGarden,
   };
 
 })();
