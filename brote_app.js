@@ -853,6 +853,12 @@
     const reconCard = buildReconstructionCard(data);
     if (reconCard) els.result.appendChild(reconCard);
 
+    // Tarjeta "Lectura botánica completa" — invitación opcionnelle a une
+    // analyse plus profonde du même huerto. Le mode rapide reste l'expérience
+    // principale ; la deep est un upgrade contemplatif explicite.
+    const deepCard = buildDeepReadingCard(data);
+    if (deepCard) els.result.appendChild(deepCard);
+
     els.result.hidden = false;
     els.result.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -965,10 +971,318 @@
   };
 
   /* ═════════════════════════════════════════════════════════════════
-     GARDEN PROPOSAL MODAL — flow principal de "Preparar mapa"
-     remplace la navigation vers verdesia_reconstruccion.html.
-     L'utilisateur voit jusqu'à 4 cartes plantes, peut ajouter en un
-     clic, ou choisir le mode manuel pour ouvrir la page éditable. */
+     LECTURA BOTÁNICA COMPLETA — Deep Garden Reading (premium UX layer)
+     ─────────────────────────────────────────────────────────────────
+     S'affiche au bas du résultat fast comme un CTA secondaire élégant.
+     L'utilisateur choisit explicitement d'attendre 15-25s pour obtenir
+     une lecture ecosystem-aware (biodiversité, organisation, équilibre).
+     Le mode rapide reste inchangé en tant qu'expérience principale. */
+
+  const buildDeepReadingCard = (data) => {
+    // Sólo offrir le deep si la lectura rápida a réussi (plantes détectées
+    // ou scene legible). On évite la confusion sur les images unclear.
+    if (!data || data.scene_type === 'unclear') return null;
+    const plants = Array.isArray(data.detected_plants) ? data.detected_plants : [];
+    if (plants.length === 0) return null;
+
+    _ensureDeepStyles();
+
+    const card = el('article', 'result-card result-card--deep');
+    card.appendChild(el('h2', 'result-card-eyebrow', 'Lectura más profunda'));
+    const headline = el('p', 'deep-headline');
+    headline.innerHTML = '¿Quieres una <em>lectura botánica completa</em> de tu huerto?';
+    card.appendChild(headline);
+    card.appendChild(el('p', 'deep-line',
+      'Verdésia puede observar la biodiversidad, la organización y el equilibrio del ecosistema. '
+      + 'Toma un poco más de tiempo — vale la pena cuando hay muchas variedades.'));
+
+    const btn = document.createElement('button');
+    btn.className = 'deep-btn';
+    btn.type = 'button';
+    btn.textContent = 'Explorar el huerto en profundidad';
+    card.appendChild(btn);
+
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      if (!currentImageDataUrl) {
+        showError('La imagen original ya no está disponible. Toma una nueva foto.');
+        return;
+      }
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      btn.textContent = 'Explorando…';
+
+      _showVeil({
+        title: 'Verdésia está observando la biodiversidad del huerto…',
+        subtitle: 'Verdésia observará con más calma la diversidad del huerto.',
+        lines: VEIL_LINES_DEEP,
+        intervalMs: 1100,
+      });
+
+      await new Promise(requestAnimationFrame);
+      await new Promise(r => setTimeout(r, 50));
+
+      // Timeout 35s — aligné sur maxDuration 30 du vercel.json (5s de
+      // marge pour que la réponse serveur arrive). Version Hobby-safe.
+      const controller = new AbortController();
+      const DEEP_TIMEOUT_MS = 35000;
+      let _timedOut = false;
+      const timeoutId = setTimeout(() => { _timedOut = true; controller.abort(); }, DEEP_TIMEOUT_MS);
+
+      console.time('verdesia:deep-total');
+      const _t0 = performance.now();
+
+      try {
+        const endpoint = (typeof window.BROTE_API_URL === 'string' && window.BROTE_API_URL) || '/api/diagnose';
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: currentImageDataUrl, mode: 'deep', fast: false }),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(text || `HTTP ${res.status}`);
+        }
+        const deepData = await res.json();
+        clearTimeout(timeoutId);
+        console.timeEnd('verdesia:deep-total');
+        const latency = Math.round(performance.now() - _t0);
+        console.log('[verdesia] deep reading end · total', latency, 'ms');
+
+        _hideVeil();
+        await new Promise(r => setTimeout(r, 200));
+
+        renderDeepResult(deepData, card);
+        // Une fois rendu, on retire la tarjeta d'invitation : la deep est
+        // accomplie pour cette image, l'utilisateur voit maintenant le résultat.
+        // (La carte garde un état "ya leído" via texte si on préfère plus tard.)
+        if (card.parentNode) card.parentNode.removeChild(card);
+      } catch (err) {
+        clearTimeout(timeoutId);
+        _hideVeil();
+        try { console.timeEnd('verdesia:deep-total'); } catch {}
+        const latency = Math.round(performance.now() - _t0);
+        console.warn('[verdesia] deep reading failed · total', latency, 'ms ·', _timedOut ? 'timeout' : err && err.name || err);
+        btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+        btn.textContent = 'Explorar el huerto en profundidad';
+        if (_timedOut) {
+          showError('La lectura profunda tomó demasiado tiempo. Intenta de nuevo, o quédate con la lectura rápida.');
+        } else {
+          showError('No fue posible completar la lectura profunda. Intenta de nuevo en un momento.');
+        }
+      }
+    });
+
+    return card;
+  };
+
+  const VEIL_LINES_DEEP = [
+    'Observando estructura…',
+    'Identificando variedades…',
+    'Leyendo densidad…',
+    'Interpretando biodiversidad…',
+    'Observando relaciones entre cultivos…',
+    'Casi listo…',
+  ];
+
+  function _ensureDeepStyles() {
+    if (document.getElementById('verdesia-deep-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'verdesia-deep-styles';
+    s.textContent = `
+      .result-card--deep {
+        background: linear-gradient(180deg, rgba(244,239,229,.6) 0%, rgba(253,250,242,.4) 100%);
+        border: 1px solid rgba(59,88,56,.18);
+      }
+      .deep-headline {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 19px; line-height: 1.35; color: #2A1E12;
+        margin: 8px 0 8px;
+      }
+      .deep-headline em { color: #3B5838; font-style: italic; }
+      .deep-line {
+        font-size: 14.5px; color: #4A3626; line-height: 1.55;
+        margin-bottom: 16px;
+      }
+      .deep-btn {
+        background: transparent; color: #3B5838;
+        border: 1.5px solid #3B5838; border-radius: 12px;
+        padding: 12px 22px; font-size: 14.5px;
+        font-family: 'Inter', system-ui, sans-serif; font-weight: 500;
+        cursor: pointer; transition: background .18s, color .18s, opacity .18s;
+        min-height: 46px;
+      }
+      .deep-btn:hover { background: #3B5838; color: #FDFAF2; }
+      .deep-btn:disabled, .deep-btn[aria-busy="true"] {
+        opacity: .65; cursor: progress;
+      }
+
+      /* DEEP RESULT — résultat affiché après une lecture profonde */
+      .deep-result {
+        margin-top: 28px;
+        padding: 28px 24px;
+        border-radius: 18px;
+        background: #FDFAF2;
+        border: 1px solid rgba(59,88,56,.18);
+        box-shadow: 0 4px 16px rgba(42,30,18,.06);
+      }
+      .deep-result-eyebrow {
+        font-family: 'DM Mono', monospace; font-size: 10px;
+        color: #78A07C; letter-spacing: 1.8px; text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .deep-result-title {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 24px; line-height: 1.3; color: #2A1E12;
+        margin-bottom: 22px;
+      }
+      .deep-result-title em { color: #3B5838; font-style: italic; }
+      .deep-section {
+        margin-bottom: 22px;
+        padding-bottom: 18px;
+        border-bottom: 1px dashed rgba(42,30,18,.10);
+      }
+      .deep-section:last-child { border-bottom: none; margin-bottom: 0; }
+      .deep-section-title {
+        font-family: 'DM Mono', monospace; font-size: 10.5px;
+        color: #7A6248; letter-spacing: 1.5px; text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .deep-section-body {
+        font-size: 14.5px; line-height: 1.65; color: #2A1E12;
+      }
+      .deep-section-body p { margin-bottom: 8px; }
+      .deep-section-body p:last-child { margin-bottom: 0; }
+      .deep-section-body strong {
+        font-weight: 500; color: #3B5838;
+      }
+      .deep-list { margin: 0; padding-left: 18px; }
+      .deep-list li { margin-bottom: 6px; line-height: 1.55; }
+      .deep-list li:last-child { margin-bottom: 0; }
+      .deep-biodiversity {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 3px 10px; border-radius: 100px;
+        font-size: 11.5px; font-family: 'Inter', system-ui, sans-serif;
+        margin-left: 8px;
+      }
+      .deep-biodiversity.bio-high   { background: rgba(120,160,124,.18); color: #3B5838; }
+      .deep-biodiversity.bio-medium { background: rgba(200,160,58,.18); color: #B55A28; }
+      .deep-biodiversity.bio-low    { background: rgba(181,90,40,.14);  color: #B55A28; }
+    `;
+    document.head.appendChild(s);
+  }
+
+  /* renderDeepResult — appended after the existing fast result.
+     Affiche 6 sections : Biodiversidad, Organización, Relaciones,
+     Equilibrio, Riesgos, Fortalezas. Mode contemplatif, calme. */
+  function renderDeepResult(data, insertAfter) {
+    const wrap = document.createElement('section');
+    wrap.className = 'deep-result';
+    wrap.setAttribute('role', 'region');
+    wrap.setAttribute('aria-label', 'Lectura botánica completa');
+
+    const gs = (data && data.garden_structure) || {};
+    const er = (data && data.ecosystem_reading) || {};
+    const so = (data && data.seasonal_observations) || {};
+    // Hard cap UX : même si l'API renvoyait plus, on n'affiche jamais
+    // plus de 8 plantes dans la lecture profonde (mobile-first lisible).
+    const plants = (Array.isArray(data && data.detected_plants) ? data.detected_plants : []).slice(0, 8);
+    const improvements = (Array.isArray(data && data.garden_improvements) ? data.garden_improvements : []).slice(0, 3);
+    const strengths = (Array.isArray(data && data.global_reading && data.global_reading.main_strengths)
+      ? data.global_reading.main_strengths : []).slice(0, 3);
+    const concerns = (Array.isArray(data && data.global_reading && data.global_reading.main_concerns)
+      ? data.global_reading.main_concerns : []).slice(0, 3);
+
+    const bio = gs.biodiversity_score || 'medium';
+    const bioLabel = bio === 'high' ? 'biodiversidad alta' : bio === 'low' ? 'biodiversidad escasa' : 'biodiversidad moderada';
+    const bioBadge = `<span class="deep-biodiversity bio-${bio}">${bioLabel}</span>`;
+
+    const plantsHtml = plants.length
+      ? '<ul class="deep-list">' + plants.map(p => {
+          const n = _escapeHtml(p.name || '');
+          const desc = p.health && p.health.status ? _escapeHtml(p.health.status) : '';
+          return `<li><strong>${n}</strong>${desc ? ' — ' + desc : ''}</li>`;
+        }).join('') + '</ul>'
+      : '<p>El huerto se ve poco variado en esta foto.</p>';
+
+    const compHtml = Array.isArray(gs.companion_planting) && gs.companion_planting.length
+      ? '<ul class="deep-list">' + gs.companion_planting.map(c => '<li>' + _escapeHtml(c) + '</li>').join('') + '</ul>'
+      : '<p>No se distinguen asociaciones claras desde esta foto.</p>';
+
+    const _line = (label, value) => {
+      const v = (value || '').toString().trim();
+      if (!v) return '';
+      return `<p><strong>${label}</strong> — ${_escapeHtml(v)}</p>`;
+    };
+
+    wrap.innerHTML = `
+      <div class="deep-result-eyebrow">Lectura botánica completa</div>
+      <h3 class="deep-result-title">Tu huerto, observado en <em>profundidad</em>${bioBadge}</h3>
+
+      <div class="deep-section">
+        <div class="deep-section-title">Biodiversidad observada</div>
+        <div class="deep-section-body">${plantsHtml}</div>
+      </div>
+
+      <div class="deep-section">
+        <div class="deep-section-title">Organización del huerto</div>
+        <div class="deep-section-body">
+          ${_line('Disposición', gs.row_organization)}
+          ${_line('Densidad', gs.density_patterns)}
+          ${_line('Equilibrio visual', gs.visual_balance)}
+          ${_line('Capas verticales', gs.vertical_layering)}
+          ${_line('Suelo', gs.soil_exposure)}
+        </div>
+      </div>
+
+      <div class="deep-section">
+        <div class="deep-section-title">Relaciones entre cultivos</div>
+        <div class="deep-section-body">${compHtml}</div>
+      </div>
+
+      <div class="deep-section">
+        <div class="deep-section-title">Equilibrio del jardín</div>
+        <div class="deep-section-body">
+          ${_line('Polinizadores', er.pollinator_friendliness)}
+          ${_line('Diversidad', er.diversity_observation)}
+          ${_line('Humedad', er.moisture_balance)}
+          ${_line('Aireación', er.airflow)}
+          ${_line('Distribución de madurez', so.maturity_distribution)}
+          ${_line('Siembra escalonada', so.succession_planting)}
+          ${_line('Equilibrio estacional', so.seasonal_balance)}
+        </div>
+      </div>
+
+      <div class="deep-section">
+        <div class="deep-section-title">Riesgos ecosistémicos</div>
+        <div class="deep-section-body">
+          ${_line('Riesgo de monocultivo', er.monoculture_risk)}
+          ${_line('Sobredensidad', er.overcrowding)}
+          ${concerns.length ? '<ul class="deep-list">' + concerns.map(c => '<li>' + _escapeHtml(c) + '</li>').join('') + '</ul>' : ''}
+        </div>
+      </div>
+
+      <div class="deep-section">
+        <div class="deep-section-title">Fortalezas del ecosistema</div>
+        <div class="deep-section-body">
+          ${strengths.length ? '<ul class="deep-list">' + strengths.map(s => '<li>' + _escapeHtml(s) + '</li>').join('') + '</ul>' : '<p>El huerto se ve en construcción tranquila.</p>'}
+          ${improvements.length ? '<p style="margin-top:10px"><strong>Mejoras sugeridas</strong></p><ul class="deep-list">' + improvements.map(i => '<li>' + _escapeHtml(i) + '</li>').join('') + '</ul>' : ''}
+        </div>
+      </div>
+    `;
+
+    // Insertion : juste après la tarjeta d'invitation, qui est encore
+    // dans le DOM à ce moment (elle sera retirée par le caller).
+    if (insertAfter && insertAfter.parentNode) {
+      insertAfter.parentNode.insertBefore(wrap, insertAfter.nextSibling);
+    } else {
+      els.result.appendChild(wrap);
+    }
+    // Scroll doux vers la nouvelle section pour que l'utilisateur la voie.
+    setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }
 
   function _ensureProposalStyles() {
     if (document.getElementById('verdesia-proposal-styles')) return;
