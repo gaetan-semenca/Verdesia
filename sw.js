@@ -18,7 +18,7 @@
    on activate by the keep-set logic.
    ══════════════════════════════════════════════════════════════ */
 
-const SW_VERSION = 'v41-deep-light-2026-05-30';
+const SW_VERSION = 'v42-anti-collision-2026-05-30';
 const SHELL_CACHE   = `verdesia-shell-${SW_VERSION}`;
 const RUNTIME_CACHE = `verdesia-runtime-${SW_VERSION}`;
 // Las fotos son inmutables (mismo nombre = misma imagen, nunca cambian

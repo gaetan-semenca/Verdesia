@@ -78,6 +78,29 @@
     };
   }
 
+  /* Construit un Set des cellules de la RÉGION VISIBLE (cols×rows en
+     haut à gauche de la grille de stockage 15×15) déjà occupées par
+     des plantes du jardin existant. Utilisé en seed pour _findFreeNear
+     pendant la génération du draft, et pour l'anti-collision dans
+     _applyDraft. Clé : "x,y" (cohérent avec _findFreeNear).
+     Si le jardin n'est pas chargé, retourne un Set vide. */
+  function _buildOccupiedFromGarden(cols, rows) {
+    const occupied = new Set();
+    const Storage = window.SemencaStorage;
+    if (!Storage || typeof Storage.loadGarden !== 'function') return occupied;
+    const STORAGE_COLS = 15;
+    const garden = Storage.loadGarden() || [];
+    for (const entry of garden) {
+      if (!entry || typeof entry.gridPos !== 'number' || entry.gridPos < 0) continue;
+      const x = entry.gridPos % STORAGE_COLS;
+      const y = Math.floor(entry.gridPos / STORAGE_COLS);
+      // On bloque uniquement les cellules dans la région visible courante.
+      // Les plantas hors visible ne gênent pas la reconstruction.
+      if (x < cols && y < rows) occupied.add(`${x},${y}`);
+    }
+    return occupied;
+  }
+
   /* Jitter determinista — desplaza la celda en espiral hasta
      encontrar una libre. Sin colisiones aleatorias entre runs
      (mismo input → misma salida). */
@@ -184,7 +207,13 @@
           growthStage:  (p.growth_stage && p.growth_stage.stage) || '',
         }));
 
-    const used = new Set();
+    // Anti-collision : on lit le jardin existant et on bloque les cellules
+    // déjà occupées DANS LA RÉGION VISIBLE (cols × rows, en haut à gauche
+    // de la grille de stockage 15×15). Sans ça, une reconstruction sur
+    // jardin non vide proposait des cells déjà prises → superposition au
+    // moment de l'apply. La preview de la modal montre désormais les
+    // bonnes positions dès la génération du draft.
+    const used = _buildOccupiedFromGarden(cols, rows);
     const suggestions = [];
     // Compteurs séparés pour le debug test mode :
     //   droppedNoMatch : la planta n'existe pas dans le catalogue curé
@@ -494,13 +523,46 @@
 
     const garden = Storage.loadGarden();
     const zone = Storage.getZone() || 'Santiago';
+
+    /* ANTI-COLLISION au moment de l'apply.
+       Le draft a été généré avec _buildOccupiedFromGarden() qui reflète
+       l'état du jardin à ce moment. Mais entre la génération et le clic
+       "Agregar a mi jardín" l'utilisateur a pu modifier son jardin
+       manuellement (autre onglet, action en arrière). On RE-VÉRIFIE
+       donc ici, avec la même logique de spirale concentrique :
+       - seed : cellules occupées par l'existant
+       - accumulate : chaque suggestion ajoute sa cellule au set
+       - si la cellule suggérée est prise → spirale vers la plus proche libre
+       - si la région visible est pleine → la plante est dropée silencieusement
+       (sera comptabilisée dans le résultat retourné mais pas ajoutée)
+       La région visible est lue depuis le draft (taille au moment de
+       la génération, ne pas la deviner). */
+    const visibleCols = (draft.visibleCols | 0) || 4;
+    const visibleRows = (draft.visibleRows | 0) || 4;
+    const occupied = _buildOccupiedFromGarden(visibleCols, visibleRows);
+
     let added = 0;
+    let droppedFull = 0;
+    let relocated = 0;
     for (const sug of draft.suggestions) {
       try {
         const plant = (window.SEMENCA_PLANTS || []).find(p => p.id === sug.plantId);
         const sowDate = _estimateSowDateForStage(plant, sug.growthStage) || todaySowDate;
+
+        // Cherche une cellule libre proche de la suggestion d'origine.
+        const tx = Math.min(visibleCols - 1, Math.max(0, sug.suggestedX | 0));
+        const ty = Math.min(visibleRows - 1, Math.max(0, sug.suggestedY | 0));
+        const free = _findFreeNear(tx, ty, occupied, visibleCols, visibleRows);
+        if (!free) {
+          droppedFull++;
+          console.warn('[reconstruction] visible region full, dropping', sug.plantId);
+          continue;
+        }
+        if (free.x !== tx || free.y !== ty) relocated++;
+        occupied.add(`${free.x},${free.y}`);
+
         const instanceId = `${sug.plantId}__${Date.now().toString(36)}_${Math.floor(Math.random() * 1e6).toString(36)}__${added}`;
-        const gridPos = sug.suggestedY * STORAGE_COLS + sug.suggestedX;
+        const gridPos = free.y * STORAGE_COLS + free.x;
         garden.push({
           instanceId,
           plantId: sug.plantId,
@@ -514,6 +576,9 @@
       } catch (e) {
         console.warn('[reconstruction] add failed for', sug.plantId, e);
       }
+    }
+    if (relocated > 0 || droppedFull > 0) {
+      console.log('[verdesia:reconstruction] anti-collision · relocated=' + relocated + ' droppedFull=' + droppedFull);
     }
     // UN SEUL write — déclenche UN SEUL gardenchange.
     Storage.saveGarden(garden);
